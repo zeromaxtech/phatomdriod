@@ -1,0 +1,2411 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>👻 PhantomDroid — Live Security Monitor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;500;700&display=swap"
+    rel="stylesheet" />
+  <!-- Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #020c0e;
+      --panel: #040f12;
+      --panel2: #061418;
+      --border: #0ff2;
+      --green: #00ff9d;
+      --cyan: #00e5ff;
+      --red: #ff3c5f;
+      --yellow: #ffe94d;
+      --orange: #ff8c42;
+      --dim: #3a6b5d;
+      --text: #b8f0d8;
+      --mono: 'Share Tech Mono', monospace;
+      --sans: 'Rajdhani', sans-serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      min-height: 100vh;
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 60px, #00ff9d03 60px, #00ff9d03 61px),
+        repeating-linear-gradient(90deg, transparent, transparent 60px, #00ff9d03 60px, #00ff9d03 61px);
+      overflow-x: hidden;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 28px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, #041014 0%, var(--bg) 100%);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      font-size: 28px;
+    }
+
+    .logo h1 {
+      font-family: var(--sans);
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 6px;
+      color: var(--green);
+      text-shadow: 0 0 20px #00ff9d66;
+    }
+
+    .logo p {
+      font-size: 10px;
+      color: var(--dim);
+      letter-spacing: 2px;
+      margin-top: 2px;
+    }
+
+    .header-stats {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .stat-pill {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 20px;
+      text-align: center;
+    }
+
+    .stat-pill .val {
+      font-family: var(--sans);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--cyan);
+      display: block;
+    }
+
+    .stat-pill .lbl {
+      font-size: 9px;
+      color: var(--dim);
+      letter-spacing: 1px;
+    }
+
+    /* Scan controls */
+    .scan-controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 2px;
+      padding: 8px 18px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+    }
+
+    .btn-start {
+      background: var(--green);
+      color: #000;
+      box-shadow: 0 0 16px #00ff9d44;
+    }
+
+    .btn-start:hover {
+      background: #00ffb3;
+      box-shadow: 0 0 24px #00ff9d77;
+    }
+
+    .btn-stop {
+      background: transparent;
+      color: var(--red);
+      border: 1px solid var(--red);
+    }
+
+    .btn-stop:hover {
+      background: #ff3c5f22;
+    }
+
+    .btn-report {
+      background: transparent;
+      color: var(--cyan);
+      border: 1px solid var(--cyan);
+    }
+
+    .btn-report:hover {
+      background: #00e5ff22;
+    }
+
+    /* ── STATUS BAR ── */
+    .status-bar {
+      padding: 8px 28px;
+      background: var(--panel2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--dim);
+      flex-shrink: 0;
+    }
+
+    .status-dot.active {
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: 0.4
+      }
+    }
+
+    #status-text {
+      color: var(--dim);
+    }
+
+    /* ── MAIN GRID ── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      grid-template-rows: auto auto;
+      gap: 16px;
+      padding: 16px 20px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    /* ── SCAN SUMMARY MODAL ── */
+    #scan-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 2000;
+      backdrop-filter: blur(5px);
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    #scan-modal.show { display: flex; }
+    .modal-content {
+      background: var(--panel);
+      border: 1px solid var(--green);
+      padding: 30px;
+      max-width: 500px;
+      width: 100%;
+      border-radius: 8px;
+      box-shadow: 0 0 50px rgba(0,255,157,0.15);
+      text-align: center;
+    }
+    .modal-content h2 { color: var(--green); margin-bottom: 10px; font-size: 24px; letter-spacing: 2px; }
+    .modal-stats { display: flex; justify-content: space-around; margin: 25px 0; }
+    .modal-stat { border-right: 1px solid var(--border); padding-right: 15px; }
+    .modal-stat:last-child { border: none; }
+    .modal-stat .val { font-size: 28px; color: var(--cyan); display: block; font-weight: bold; }
+    .modal-stat .lbl { font-size: 10px; color: var(--dim); }
+    .modal-actions { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+
+    /* ── SCAN PROGRESS BAR ── */
+    #scan-progress-bar {
+      width: 100%;
+      height: 2px;
+      background: rgba(0, 255, 157, 0.05);
+      position: relative;
+      overflow: hidden;
+      display: none;
+    }
+    #scan-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--green), var(--cyan));
+      box-shadow: 0 0 10px var(--green);
+      transition: width 0.5s ease;
+    }
+
+    /* ── SCAN SUMMARY CARD (IN-FEED) ── */
+    .scan-summary-card {
+      background: linear-gradient(135deg, #040f12, #061a1f);
+      border: 1px solid rgba(0, 255, 157, 0.3);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      animation: slideIn 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+      position: relative;
+      overflow: hidden;
+    }
+    .scan-summary-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 2px;
+      background: var(--green);
+      box-shadow: 0 0 15px var(--green);
+    }
+    .ss-header { 
+      font-size: 14px; 
+      font-weight: bold; 
+      color: var(--green); 
+      letter-spacing: 3px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ss-stats {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+    .ss-stats span {
+      background: rgba(255,255,255,0.03);
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 11px;
+      border: 1px solid var(--border);
+    }
+    .ss-verdict {
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.5;
+      padding: 12px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 4px;
+      border-left: 3px solid var(--cyan);
+      margin-bottom: 15px;
+    }
+    .ss-btn { width: 100%; justify-content: center; }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 900px) {
+      .header {
+        flex-direction: column;
+        gap: 15px;
+        padding: 10px;
+      }
+
+      .header-stats {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .main-grid {
+        grid-template-columns: 1fr;
+        padding: 10px;
+      }
+
+      .ai-panel {
+        grid-column: 1;
+        grid-row: auto;
+      }
+
+      .logo h1 {
+        font-size: 20px;
+        letter-spacing: 2px;
+      }
+
+      /* Hide panels by default on mobile, shown via tabs */
+      .main-grid {
+        display: block;
+        /* Stack vertically if needed, but we handle via tabs */
+      }
+
+      .panel {
+        display: none;
+        margin-bottom: 0;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+      }
+
+      .panel.active-tab {
+        display: block;
+      }
+
+      .mobile-tabs {
+        display: flex !important;
+      }
+    }
+
+    /* ── MOBILE TABS ── */
+    .mobile-tabs {
+      display: none;
+      background: var(--panel2);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 130px;
+      /* Below header on mobile */
+      z-index: 90;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 12px 5px;
+      background: transparent;
+      border: none;
+      color: var(--dim);
+      font-family: var(--sans);
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-align: center;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.3s;
+    }
+
+    .tab-btn.active {
+      color: var(--cyan);
+      border-bottom-color: var(--cyan);
+      background: #00e5ff08;
+    }
+
+    .tab-btn .t-icon {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 2px;
+    }
+
+    /* ── PANELS ── */
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--panel2);
+    }
+
+    .panel-title {
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: var(--cyan);
+    }
+
+    .panel-badge {
+      font-size: 9px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      border: 1px solid currentColor;
+    }
+
+    /* ── LIVE THREAT FEED ── */
+    .threat-feed {
+      height: 380px;
+      overflow-y: auto;
+      padding: 8px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--dim) transparent;
+    }
+
+    .threat-item {
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      border-radius: 4px;
+      border-left: 3px solid var(--dim);
+      background: #ffffff04;
+      animation: slideIn 0.3s ease;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      align-items: start;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .threat-item.CRITICAL {
+      border-left-color: var(--red);
+      background: #ff3c5f08;
+    }
+
+    .threat-item.HIGH {
+      border-left-color: var(--orange);
+      background: #ff8c4208;
+    }
+
+    .threat-item.MEDIUM {
+      border-left-color: var(--yellow);
+      background: #ffe94d08;
+    }
+
+    .threat-item.LOW {
+      border-left-color: var(--dim);
+    }
+
+    .threat-icon {
+      font-size: 16px;
+      margin-top: 1px;
+    }
+
+
+    .threat-app {
+      font-size: 11px;
+      color: var(--cyan);
+      margin-bottom: 2px;
+    }
+
+    .threat-desc {
+      font-size: 11px;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .threat-time {
+      font-size: 9px;
+      color: var(--dim);
+    }
+
+    .threat-score {
+      font-family: var(--sans);
+      font-size: 20px;
+      font-weight: 700;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .score-crit {
+      color: var(--red);
+    }
+
+    .score-high {
+      color: var(--orange);
+    }
+
+    .score-med {
+      color: var(--yellow);
+    }
+
+    .score-low {
+      color: var(--dim);
+    }
+
+    /* ── AI NARRATION PANEL ── */
+    .ai-panel {
+      grid-column: 2;
+      grid-row: 1 / 3;
+    }
+
+    .ai-feed {
+      padding: 14px;
+      height: 560px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--dim) transparent;
+    }
+
+    .ai-message {
+      margin-bottom: 16px;
+      padding: 12px;
+      background: #00ff9d08;
+      border: 1px solid #00ff9d22;
+      border-radius: 6px;
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0
+      }
+
+      to {
+        opacity: 1
+      }
+    }
+
+    .ai-meta {
+      font-size: 9px;
+      color: var(--dim);
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+
+    .ai-text {
+      font-size: 11px;
+      color: var(--green);
+      line-height: 1.7;
+    }
+
+    .ai-cursor {
+      display: inline-block;
+      width: 6px;
+      height: 12px;
+      background: var(--green);
+      animation: blink 0.8s infinite;
+    }
+
+    .ai-empty {
+      color: var(--dim);
+      font-size: 11px;
+      text-align: center;
+      padding: 40px 20px;
+      line-height: 2;
+    }
+
+    /* ── APP SCORES ── */
+    .scores-panel {
+      grid-column: 1;
+    }
+
+    .scores-list {
+      padding: 12px;
+      max-height: 280px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--dim) transparent;
+    }
+
+    .score-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 0;
+      border-bottom: 1px solid #ffffff06;
+    }
+
+    .score-row:last-child {
+      border-bottom: none;
+    }
+
+    .score-app-name {
+      font-size: 11px;
+      color: var(--text);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .score-bar-wrap {
+      width: 100px;
+      height: 4px;
+      background: #ffffff11;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .score-bar {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.5s ease;
+    }
+
+    .score-num {
+      font-family: var(--sans);
+      font-weight: 700;
+      font-size: 14px;
+      width: 32px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* ── PERMISSION MAP ── */
+    .perm-grid {
+      padding: 14px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 8px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .perm-cell {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 6px;
+      text-align: center;
+      transition: all 0.3s;
+    }
+
+    .perm-cell.active {
+      border-color: var(--red);
+      background: #ff3c5f11;
+      box-shadow: 0 0 10px #ff3c5f22;
+      cursor: pointer;
+    }
+
+    .perm-cell.selected {
+      border-color: var(--green);
+      background: #00ff8811;
+      box-shadow: 0 0 15px #00ff8833;
+    }
+
+    .perm-cell .p-icon {
+      font-size: 18px;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .perm-cell .p-name {
+      font-size: 9px;
+      color: var(--dim);
+      letter-spacing: 0.5px;
+    }
+
+    .perm-cell .p-count {
+      font-family: var(--sans);
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--red);
+    }
+
+    @keyframes hitFlash {
+      0% {
+        background: #ff3c5f66;
+        box-shadow: 0 0 20px var(--red);
+      }
+
+      100% {
+        background: #ff3c5f11;
+        box-shadow: 0 0 10px #ff3c5f22;
+      }
+    }
+
+    .flash-red {
+      animation: hitFlash 0.5s ease-out;
+    }
+
+    /* ── PERMISSION PANEL ── */
+    .perm-panel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-height: 60vh;
+      overflow-y: auto;
+      background: var(--panel);
+      border-top: 1px solid rgba(0, 255, 157, 0.2);
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1000;
+      padding-bottom: 20px;
+    }
+
+    .perm-panel.open {
+      transform: translateY(0);
+      box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .perm-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel2);
+    }
+
+    #perm-panel-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: var(--cyan);
+    }
+
+    .perm-panel-close {
+      background: transparent;
+      border: none;
+      color: var(--dim);
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .perm-panel-close:hover {
+      color: var(--red);
+    }
+
+    #perm-panel-body {
+      padding: 15px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .perm-app-card {
+      background: #0a1920;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+    }
+
+    .perm-app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .perm-app-name {
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--text);
+    }
+
+    .perm-app-count {
+      font-size: 10px;
+      background: #ffffff11;
+      padding: 2px 6px;
+      border-radius: 12px;
+      color: var(--dim);
+    }
+
+    .perm-app-context {
+      font-size: 11px;
+      color: var(--dim);
+      margin-bottom: 8px;
+    }
+
+    .perm-app-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .perm-tag {
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+    
+    /* ── PROTECTION UI ── */
+    .shield-toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 5px 12px;
+      background: rgba(0, 255, 157, 0.05);
+      border: 1px solid rgba(0, 255, 157, 0.2);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .shield-toggle-wrap.active {
+      background: rgba(0, 255, 157, 0.15);
+      border-color: var(--green);
+      box-shadow: 0 0 10px rgba(0, 255, 157, 0.2);
+    }
+
+    .shield-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--dim);
+    }
+
+    .shield-toggle-wrap.active .shield-dot {
+      background: var(--green);
+      box-shadow: 0 0 5px var(--green);
+    }
+
+    .shield-label {
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    .btn-protect {
+      background: var(--red);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-size: 10px;
+      font-family: var(--mono);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-protect:hover {
+      filter: brightness(1.2);
+      box-shadow: 0 0 10px rgba(255, 60, 95, 0.4);
+    }
+    
+    .protection-menu {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      margin-top: 10px;
+      border-top: 1px dashed var(--border);
+      padding-top: 10px;
+    }
+    
+    .protection-menu.open {
+      display: flex;
+    }
+
+    .btn-action {
+      background: #ffffff11;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px;
+      font-size: 10px;
+      border-radius: 4px;
+      text-align: left;
+    }
+
+    .btn-action:hover {
+      background: #ffffff22;
+      border-color: var(--dim);
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-feed {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 300px;
+      color: var(--dim);
+      font-size: 11px;
+      letter-spacing: 1px;
+      line-height: 2.5;
+      text-align: center;
+    }
+
+    .empty-feed .big {
+      font-size: 40px;
+      margin-bottom: 10px;
+    }
+
+    /* ── SEVERITY BADGE ── */
+    .sev {
+      font-size: 8px;
+      padding: 1px 6px;
+      border-radius: 3px;
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+
+    .sev-crit {
+      background: #ff3c5f33;
+      color: var(--red);
+      border: 1px solid var(--red);
+    }
+
+    .sev-high {
+      background: #ff8c4233;
+      color: var(--orange);
+      border: 1px solid var(--orange);
+    }
+
+    .sev-med {
+      background: #ffe94d33;
+      color: var(--yellow);
+      border: 1px solid var(--yellow);
+    }
+
+    .sev-low {
+      background: #3a6b5d33;
+      color: var(--dim);
+      border: 1px solid var(--dim);
+    }
+
+    .night-badge {
+      display: inline-block;
+      font-size: 8px;
+      background: #3a506b;
+      color: #a0c4ff;
+      padding: 1px 4px;
+      border-radius: 4px;
+      margin-left: 5px;
+      border: 1px solid #5a78af;
+    }
+
+    /* Chart canvas */
+    canvas {
+      max-height: 200px;
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--dim);
+      border-radius: 2px;
+    }
+
+    /* Notification toast */
+
+    /* ── V3 MODE SELECTOR ── */
+    .mode-selector {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding: 14px 20px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+    }
+    .mode-card {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .mode-card:hover { border-color: var(--cyan); box-shadow: 0 0 16px #00e5ff18; }
+    .mode-card.active-mode { border-color: var(--green); box-shadow: 0 0 20px #00ff9d22; }
+    .mode-card.running-mode { border-color: var(--red); animation: pulse-border 1.5s infinite; }
+    @keyframes pulse-border {
+      0%,100% { box-shadow: 0 0 8px #ff3c5f44; }
+      50%      { box-shadow: 0 0 22px #ff3c5f88; }
+    }
+    .mode-icon { font-size: 26px; margin-bottom: 6px; display: block; }
+    .mode-title {
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--cyan);
+      margin-bottom: 4px;
+    }
+    .mode-desc { font-size: 10px; color: var(--dim); line-height: 1.5; margin-bottom: 10px; }
+    .mode-btn {
+      width: 100%;
+      padding: 7px 0;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .mode-btn:hover { background: var(--green); color: #000; border-color: var(--green); }
+    .mode-btn.danger:hover { background: var(--red); color: #fff; border-color: var(--red); }
+    .mode-runtime {
+      position: absolute;
+      top: 8px; right: 10px;
+      font-size: 9px;
+      color: var(--red);
+      display: none;
+    }
+    .mode-card.running-mode .mode-runtime { display: block; }
+    .live-app-select {
+      width: 100%;
+      margin-bottom: 8px;
+      padding: 5px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 10px;
+      border-radius: 4px;
+    }
+    .monitor-status-bar {
+      padding: 6px 20px;
+      background: #020c0e;
+      border-bottom: 1px solid var(--border);
+      font-size: 10px;
+      color: var(--dim);
+      display: flex;
+      gap: 24px;
+      align-items: center;
+    }
+    .mstat-val { color: var(--green); font-weight: 700; }
+
+    /* ── AD PROFILING SECTION ── */
+    .ad-profiling-section {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .ad-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .ad-section-title {
+      font-family: var(--sans);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: var(--red);
+      text-shadow: 0 0 10px #ff3c5f55;
+    }
+    .ad-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+    }
+    .ad-table th {
+      text-align: left;
+      padding: 6px 10px;
+      color: var(--dim);
+      border-bottom: 1px solid var(--border);
+      letter-spacing: 1px;
+    }
+    .ad-table td {
+      padding: 7px 10px;
+      border-bottom: 1px solid #00ff9d08;
+      color: var(--text);
+    }
+    .ad-table tr:hover td { background: #00ff9d05; }
+    .prob-high  { color: var(--red); font-weight: 700; }
+    .prob-med   { color: var(--orange); }
+    .prob-low   { color: var(--dim); }
+    .ad-empty {
+      text-align: center;
+      padding: 20px;
+      color: var(--dim);
+      font-size: 10px;
+      letter-spacing: 1px;
+    }
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 12px 18px;
+      border-radius: 6px;
+      font-size: 11px;
+      color: var(--green);
+      z-index: 999;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s;
+      max-width: 300px;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">
+      <span class="logo-icon">👻</span>
+      <div>
+        <h1>PHANTOMDROID</h1>
+        <p>// ANDROID LIVE SECURITY MONITOR</p>
+      </div>
+    </div>
+    <div class="header-stats">
+      <div class="stat-pill">
+        <span class="val" id="stat-threats">0</span>
+        <span class="lbl">THREATS</span>
+      </div>
+      <div class="stat-pill">
+        <span class="val" id="stat-apps">0</span>
+        <span class="lbl">APPS FLAGGED</span>
+      </div>
+      <div class="stat-pill">
+        <span class="val" id="stat-time">00:00</span>
+        <span class="lbl">SCAN TIME</span>
+      </div>
+      <div class="stat-pill">
+        <span class="val" id="stat-eta">--:--</span>
+        <span class="lbl">EST. PHASE</span>
+      </div>
+    </div>
+    <div class="header-right" style="display:flex; align-items:center; gap:20px;">
+        <div class="shield-toggle-wrap" id="shield-toggle" onclick="toggleShield()">
+           <div class="shield-dot"></div>
+           <span class="shield-label">PRIVACY SHIELD</span>
+        </div>
+        <div class="scan-controls">
+        </div>
+    </div>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <div class="status-dot" id="status-dot"></div>
+    <span id="status-text">IDLE — Connect Android phone via USB, enable USB Debugging, then press START SCAN</span>
+  </div>
+  <div id="scan-progress-bar">
+    <div id="scan-progress-fill"></div>
+  </div>
+
+  <!-- V3 — 3 MODE SELECTOR -->
+  <div class="mode-selector">
+
+    <!-- 24HR WATCH -->
+    <div class="mode-card" id="card-24hr">
+      <span class="mode-runtime" id="runtime-24hr">⏱ --:--</span>
+      <span class="mode-icon">🕐</span>
+      <div class="mode-title">24HR WATCH</div>
+      <div class="mode-desc">Silent background monitoring. Runs for 24 hours and generates a full privacy report.</div>
+      <button class="mode-btn" id="btn-24hr" onclick="startMonitor('24hr')">▶ START 24HR MONITOR</button>
+    </div>
+
+    <!-- QUICK SCAN -->
+    <div class="mode-card" id="card-quick">
+      <span class="mode-runtime" id="runtime-quick">⏱ --:--</span>
+      <span class="mode-icon">⚡</span>
+      <div class="mode-title">QUICK SCAN</div>
+      <div class="mode-desc">Deep scan your device right now. Runs for 3 minutes, results appear instantly.</div>
+      <button class="mode-btn" id="btn-quick" onclick="startMonitor('quick')">⚡ START QUICK SCAN</button>
+    </div>
+
+    <!-- LIVE WATCH -->
+    <div class="mode-card" id="card-live">
+      <span class="mode-runtime" id="runtime-live">⏱ --:--</span>
+      <span class="mode-icon">👁</span>
+      <div class="mode-title">LIVE WATCH</div>
+      <div class="mode-desc">Put one app under a microscope. Open it and watch what it does in real time.</div>
+      <select class="live-app-select" id="live-app-select">
+        <option value="com.instagram.android">Instagram</option>
+        <option value="com.google.android.youtube">YouTube</option>
+        <option value="com.facebook.katana">Facebook</option>
+        <option value="com.spotify.music">Spotify</option>
+        <option value="com.netflix.mediaclient">Netflix</option>
+        <option value="com.android.chrome">Chrome</option>
+        <option value="com.google.android.googlequicksearchbox">Google Search</option>
+        <option value="com.tiktok.android">TikTok</option>
+        <option value="com.snapchat.android">Snapchat</option>
+      </select>
+      <button class="mode-btn" id="btn-live" onclick="startMonitor('live')">👁 START LIVE WATCH</button>
+    </div>
+
+  </div>
+
+  <!-- MONITOR STATUS BAR -->
+  <div class="monitor-status-bar" id="monitor-status-bar" style="display:none">
+    <span>🔴 MONITOR ACTIVE</span>
+    <span>Mode: <span class="mstat-val" id="mstat-mode">--</span></span>
+    <span>Events: <span class="mstat-val" id="mstat-events">0</span></span>
+    <span>Threats: <span class="mstat-val" id="mstat-threats">0</span></span>
+    <span>Runtime: <span class="mstat-val" id="mstat-runtime">00:00</span></span>
+    <button onclick="stopMonitor()" style="margin-left:auto;padding:3px 12px;background:var(--red);border:none;color:#fff;border-radius:3px;font-family:var(--mono);font-size:10px;cursor:pointer;">■ STOP MONITOR</button>
+  </div>
+
+  <!-- AD PROFILING SECTION -->
+  <div class="ad-profiling-section" id="ad-profiling-section">
+    <div class="ad-section-header">
+      <span class="ad-section-title">📡 AD PROFILING DETECTION</span>
+      <span class="panel-badge" id="ad-count-badge" style="color:var(--red);border-color:var(--red)">0 CORRELATIONS</span>
+    </div>
+    <table class="ad-table">
+      <thead>
+        <tr>
+          <th>APP</th>
+          <th>MIC ACCESS TIME</th>
+          <th>AD SERVER CONTACTED</th>
+          <th>TIME GAP</th>
+          <th>PROBABILITY</th>
+        </tr>
+      </thead>
+      <tbody id="ad-table-body">
+        <tr><td colspan="5" class="ad-empty">📡 No ad profiling events detected yet — start a scan or monitor to populate this table.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- MOBILE TABS -->
+  <div class="mobile-tabs">
+    <button class="tab-btn active" onclick="switchTab('threats', this)">
+      <span class="t-icon">⚡</span> THREATS
+    </button>
+    <button class="tab-btn" onclick="switchTab('ai', this)">
+      <span class="t-icon">🤖</span> AI ANALYST
+    </button>
+    <button class="tab-btn" onclick="switchTab('scores', this)">
+      <span class="t-icon">🎯</span> ANALYTICS
+    </button>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <!-- LIVE THREAT FEED -->
+    <div class="panel threat-panel active-tab">
+      <div class="panel-header">
+        <span class="panel-title">⚡ LIVE THREAT FEED</span>
+        <span class="panel-badge" id="feed-count" style="color:var(--green);border-color:var(--green)">0 EVENTS</span>
+      </div>
+      <div class="threat-feed" id="threat-feed">
+        <div class="empty-feed">
+          <span class="big">📱</span>
+          <span>Waiting for scan to start...</span>
+          <span style="color:#1a3a2d">Connect phone → Press START SCAN</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI NARRATION -->
+    <div class="panel ai-panel">
+      <div class="panel-header">
+        <span class="panel-title">🤖 AI ANALYST</span>
+        <span class="panel-badge" style="color:var(--green);border-color:var(--green)">CLAUDE</span>
+      </div>
+      <div class="ai-feed" id="ai-feed">
+        <div class="ai-empty">
+          👁 AI analyst standing by...<br><br>
+          Start a scan to receive<br>live security narration
+        </div>
+      </div>
+    </div>
+
+    <!-- APP THREAT SCORES + PERMISSION MAP -->
+    <div class="panel scores-panel">
+      <div class="panel-header">
+        <span class="panel-title">🎯 APP THREAT SCORES</span>
+        <span class="panel-badge" style="color:var(--cyan)">LIVE</span>
+      </div>
+      <div class="scores-list" id="scores-list">
+        <div style="color:var(--dim);font-size:11px;text-align:center;padding:40px">
+          No app scores yet
+        </div>
+      </div>
+      <div class="panel-header" style="border-top:1px solid var(--border);">
+        <span class="panel-title">🔑 PERMISSION ABUSE MAP</span>
+      </div>
+      <div class="perm-grid" id="perm-grid">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PERMISSION SLIDE-UP PANEL -->
+  <div id="perm-panel" class="perm-panel">
+    <div class="perm-panel-header">
+      <span id="perm-panel-title"></span>
+      <button class="perm-panel-close" onclick="closePermPanel()">✕</button>
+    </div>
+    <div id="perm-panel-body"></div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="scan-modal">
+    <div class="modal-content">
+      <div style="font-size: 40px; margin-bottom: 15px;">🏁</div>
+      <h2>SCAN COMPLETE</h2>
+      <p style="font-size: 12px; color: var(--dim); margin-bottom: 20px;">Investigative session has finished processing.</p>
+      
+      <div class="modal-stats">
+        <div class="modal-stat">
+          <span class="val" id="modal-threats">0</span>
+          <span class="lbl">TOTAL THREATS</span>
+        </div>
+        <div class="modal-stat">
+          <span class="val" id="modal-apps">0</span>
+          <span class="lbl">RISKY APPS</span>
+        </div>
+        <div class="modal-stat">
+          <span class="val" id="modal-time">00:00</span>
+          <span class="lbl">SCAN DURATION</span>
+        </div>
+      </div>
+
+      <div style="background: rgba(0,255,157,0.05); padding: 15px; border-radius: 6px; border: 1px dashed var(--border); margin-bottom: 20px;">
+        <h4 style="font-size: 10px; color: var(--green); margin-bottom: 5px;">AI ANALYST VERDICT</h4>
+        <p id="modal-verdict" style="font-size: 13px; color: var(--text);">Determining final device security posture...</p>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-start" onclick="closeModal()">VIEW FEED</button>
+        <button class="btn btn-report" onclick="generateReport()">DOWNLOAD REPORT</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast">Notifications</div>
+
+  <script>
+    // ── CONFIG ──
+    // Detect if we are on phone (assets) or PC (flask)
+    const IS_PC = !window.location.href.startsWith("file:///");
+    const BACKEND_URL = IS_PC ? window.location.origin : "http://192.168.29.68:5000";
+
+    // ── FIREBASE CONFIG ──
+    const firebaseConfig = {
+      apiKey: "YOUR_FIREBASE_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // Check if Firebase is actually configured
+    const isFirebaseConfigured = firebaseConfig.apiKey && !firebaseConfig.apiKey.includes("YOUR_FIREBASE");
+
+    // ── STATE ──
+    let sessionId = null;
+    let scanActive = false;
+    let threatCount = 0;
+    let appsFlagged = new Set();
+    let startTime = null;
+    let timerInterval = null;
+    let narrationInterval = null;
+    let permCounts = {};
+    let activeFilter = null;
+    let allThreatEvents = [];
+    let permissionRegistry = {}; // New robust registry for the slide-up panel
+    let shieldEnabled = false;
+
+
+
+    // ── PERMISSIONS DISPLAY MAP ──
+    const PERM_DISPLAY = [
+      { key: "RECORD_AUDIO", icon: "🎤", label: "Mic" },
+      { key: "CAMERA", icon: "📷", label: "Camera" },
+      { key: "ACCESS_FINE_LOCATION", icon: "📍", label: "GPS" },
+      { key: "ACCESS_BACKGROUND_LOCATION", icon: "🗺️", label: "BG GPS" },
+      { key: "READ_SMS", icon: "💬", label: "SMS" },
+      { key: "READ_CONTACTS", icon: "👥", label: "Contacts" },
+      { key: "READ_CALL_LOG", icon: "📞", label: "Calls" },
+      { key: "READ_PHONE_STATE", icon: "📱", label: "Identity" },
+    ];
+
+    function initPermGrid() {
+      // Auto-detect mode based on environment
+      const modeSelect = document.getElementById("scan-mode");
+      if (typeof AndroidHost !== 'undefined') {
+        modeSelect.value = "mobile";
+        setStatus(false, "READY — Standalone Mobile Mode");
+      } else {
+        modeSelect.value = "pc";
+        setStatus(false, "READY — PC Forensic Mode (USB)");
+      }
+
+      const grid = document.getElementById("perm-grid");
+      grid.innerHTML = PERM_DISPLAY.map(p => `
+    <div class="perm-cell" id="perm-${p.key}" onclick="showPermissionPanel('${p.key}')">
+      <span class="p-icon">${p.icon}</span>
+      <span class="p-name">${p.label}</span>
+      <span class="p-count" id="perm-count-${p.key}">0</span>
+    </div>
+  `).join("");
+    }
+
+    function showPermissionPanel(permKey) {
+      const target = document.getElementById(`perm-${permKey}`);
+      if (!target) return;
+
+      // Update filtering state
+      const cells = document.querySelectorAll('.perm-cell');
+      if (activeFilter === permKey) {
+        // Double click: close and clear filter
+        closePermPanel();
+        return;
+      }
+      activeFilter = permKey;
+      cells.forEach(c => c.classList.remove('selected'));
+      target.classList.add('selected');
+
+      // Update Threat Feed implicitly
+      renderFilteredFeed();
+
+      // Setup Panel
+      const panel = document.getElementById("perm-panel");
+      const title = document.getElementById("perm-panel-title");
+      const body = document.getElementById("perm-panel-body");
+
+      const permInfo = PERM_DISPLAY.find(p => p.key === permKey);
+      title.innerHTML = `${permInfo ? permInfo.icon : "🔑"} ${permInfo ? permInfo.label : permKey} — Apps Detected`;
+
+      const regData = permissionRegistry[permKey];
+
+      if (!regData || Object.keys(regData.apps).length === 0) {
+        body.innerHTML = `<div style="text-align:center; padding:20px; color:var(--dim)">No apps found using this permission.</div>`;
+      } else {
+        const sortedApps = Object.entries(regData.apps).sort((a, b) => b[1].threat_score - a[1].threat_score);
+        body.innerHTML = sortedApps.map(([pkg, data]) => {
+
+          // Colorize score
+          const color = data.threat_score >= 70 ? "#ff3c5f" : data.threat_score >= 40 ? "#ff8c42" : data.threat_score >= 20 ? "#ffe94d" : "#3a6b5d";
+
+          // Format tags
+          const tagsHtml = Array.from(data.tags).map(tag => {
+            let tagColor = "var(--dim)";
+            if (tag === "NIGHT") tagColor = "#a0c4ff";
+            if (tag === "PAYMENT") tagColor = "var(--yellow)";
+            if (tag === "BACKGROUND") tagColor = "var(--orange)";
+            if (tag === "NORMAL") tagColor = "var(--green)";
+            if (tag === "PROFILING") tagColor = "var(--cyan)";
+            return `<span class="perm-tag" style="color:${tagColor}; border-color:${tagColor}">${tag}</span>`;
+          }).join("");
+
+          return `
+             <div class="perm-app-card">
+               <div class="perm-app-header">
+                 <span class="perm-app-name">${pkg}</span>
+                 <span class="perm-app-count">${data.count} time(s)</span>
+               </div>
+               <div class="perm-app-context">
+                 Worst context: <span style="color:var(--text)">${data.worst_context}</span>
+               </div>
+               <div style="display:flex; justify-content:space-between; align-items:center;">
+                 <div class="perm-app-tags">${tagsHtml}</div>
+                 <div style="display:flex; gap: 8px; align-items:center;">
+                   <button class="btn-protect" onclick="toggleProtectionMenu('${pkg}')">
+                     🛡️ PROTECT
+                   </button>
+                   <div style="font-family:var(--sans); font-weight:bold; color:${color}">Score: ${data.threat_score}</div>
+                 </div>
+               </div>
+               <div class="protection-menu" id="protect-menu-${pkg}">
+                 <button class="btn-action" onclick="invokeAction('STOP', '${pkg}')">🚫 Force Stop App</button>
+                 <button class="btn-action" onclick="invokeAction('REVOKE', '${pkg}')">🔐 Revoke Permissions</button>
+               </div>
+             </div>
+           `;
+        }).join("");
+      }
+
+      panel.classList.add("open");
+    }
+
+    function toggleProtectionMenu(pkg) {
+      document.querySelectorAll('.protection-menu').forEach(m => {
+        if (m.id !== `protect-menu-${pkg}`) m.classList.remove('open');
+      });
+      const menu = document.getElementById(`protect-menu-${pkg}`);
+      if (menu) menu.classList.toggle('open');
+    }
+
+    async function invokeAction(action, pkg) {
+      showToast(`Invoking ${action} on ${pkg}...`);
+      if (typeof AndroidHost !== 'undefined') {
+        if (action === 'STOP') AndroidHost.forceStopApp(pkg);
+        if (action === 'REVOKE') AndroidHost.openPermissionSettings(pkg);
+      } else {
+        alert(`Protection Action: ${action} for ${pkg}\n(Requires Android Bridge)`);
+      }
+    }
+
+    function toggleShield() {
+      shieldEnabled = !shieldEnabled;
+      const wrap = document.getElementById("shield-toggle");
+      if (shieldEnabled) {
+        wrap.classList.add("active");
+        showToast("🛡️ PRIVACY SHIELD ACTIVE");
+        addAINarration("Privacy Shield engaged. I will now proactively monitor for high-risk data behavior.");
+      } else {
+        wrap.classList.remove("active");
+        showToast("🛡️ SHIELD DISENGAGED");
+      }
+    }
+
+    function closePermPanel() {
+      document.getElementById("perm-panel").classList.remove("open");
+      activeFilter = null;
+      document.querySelectorAll('.perm-cell').forEach(c => c.classList.remove('selected'));
+      renderFilteredFeed();
+    }
+
+    // Left empty since it was replaced
+
+    function renderFilteredFeed() {
+      const feed = document.getElementById("threat-feed");
+      feed.innerHTML = "";
+
+      const filtered = activeFilter
+        ? allThreatEvents.filter(e => e.description.includes(activeFilter) || (e.permissions && e.permissions.includes(activeFilter)))
+        : allThreatEvents;
+
+      if (filtered.length === 0) {
+        feed.innerHTML = `<div class="empty-feed">No threats match filter ${activeFilter || ''}</div>`;
+      } else {
+        filtered.forEach(e => addThreatUI(e));
+      }
+    }
+
+    function handleStart() {
+      const startBtn = document.querySelector(".btn-start");
+      
+      // If scan was already complete, reset everything first
+      if (startBtn.textContent.includes("NEW SCAN")) {
+        resetDashboard();
+      }
+
+      const mode = document.getElementById("scan-mode").value;
+      if (mode === "mobile") {
+        startIndependentScan();
+      } else {
+        startScan();
+      }
+    }
+
+    function resetDashboard() {
+      allThreatEvents = [];
+      threatCount = 0;
+      appsFlagged.clear();
+      permCounts = {};
+      document.getElementById("threat-feed").innerHTML = `
+        <div class="empty-feed">
+          <span class="big">📱</span>
+          <span>Waiting for scan to start...</span>
+        </div>`;
+      document.getElementById("ai-feed").innerHTML = "";
+      document.getElementById("stat-threats").textContent = "0";
+      document.getElementById("stat-apps").textContent = "0";
+      document.getElementById("stat-time").textContent = "00:00";
+      document.getElementById("stat-eta").textContent = "--:--";
+      document.getElementById("status-text").textContent = "IDLE — Press START SCAN to begin";
+      initPermGrid();
+      
+      const startBtn = document.querySelector(".btn-start");
+      startBtn.textContent = "▶ START SCAN";
+      startBtn.classList.remove("btn-new");
+    }
+
+    async function startIndependentScan() {
+      try {
+        if (scanActive) return;
+
+        const startBtn = document.querySelector(".btn-start");
+        const originalText = startBtn.textContent;
+        startBtn.textContent = "⌛ INITIALIZING...";
+        startBtn.style.opacity = "0.7";
+
+        setTimeout(async () => {
+          try {
+            if (typeof AndroidHost === 'undefined') {
+              startBtn.textContent = originalText;
+              startBtn.style.opacity = "1";
+              alert("❌ System Bridge Not Found. Please restart the app.");
+              return;
+            }
+
+            scanActive = true;
+            threatCount = 0;
+            appsFlagged.clear();
+            permCounts = {};
+            startTime = Date.now();
+            setStatus(true, "Independent Mobile Scan Active");
+            document.getElementById("threat-feed").innerHTML = "";
+            document.getElementById("ai-feed").innerHTML = "";
+            initPermGrid();
+
+            timerInterval = setInterval(updateTimer, 1000);
+            startBtn.textContent = originalText;
+            startBtn.style.opacity = "1";
+
+            const sysJson = AndroidHost.getSystemInfo();
+            const sysInfo = JSON.parse(sysJson);
+            addAINarration("Scanning " + sysInfo.manufacturer + " " + sysInfo.model + " (Android " + sysInfo.version + ")");
+
+            const appsJson = AndroidHost.getInstalledApps();
+            const apps = JSON.parse(appsJson);
+
+            showToast("📱 Analyzing " + apps.length + " apps...");
+
+            apps.forEach((app, index) => {
+              setTimeout(() => {
+                if (!scanActive) return;
+
+                let severity = "LOW";
+                let score = 10;
+                let desc = "Standard app installed.";
+
+                if (app.permissions > 15) {
+                  severity = "CRITICAL";
+                  score = 85;
+                  desc = "Excessive Permissions (" + app.permissions + "). High privacy risk.";
+                } else if (app.permissions > 8) {
+                  severity = "HIGH";
+                  score = 60;
+                  desc = "Multiple sensitive permissions (" + app.permissions + ") detected.";
+                } else if (app.package.includes("debug") || app.package.includes("test")) {
+                  severity = "MEDIUM";
+                  score = 40;
+                  desc = "Potential debug or test package found.";
+                }
+
+                addThreatToFeed({
+                  app: app.name,
+                  description: desc,
+                  severity: severity,
+                  threat_score: score,
+                  type: "Static Analysis",
+                  permissions: app.sensitivePerms
+                });
+
+                if (severity !== "LOW") {
+                  updateScoresList({ [app.package]: { app: app.name, score: score } });
+                  updateStats({ permissions: app.sensitivePerms });
+                }
+              }, index * 40);
+            });
+          } catch (err) {
+            alert("Scan Logic Error: " + err.message);
+            startBtn.textContent = originalText;
+            startBtn.style.opacity = "1";
+          }
+        }, 500);
+      } catch (e) {
+        alert("Startup Error: " + e.message);
+      }
+    }
+
+    // ── START SCAN (PC) ──
+    async function startScan() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/start-scan`, { method: "POST" });
+        const data = await res.json();
+
+        if (data.success) {
+          sessionId = data.session_id;
+          scanActive = true;
+          threatCount = 0;
+          startTime = Date.now();
+          appsFlagged.clear();
+
+          document.getElementById("threat-feed").innerHTML = "";
+          setStatus(true, "🛡️ Initializing PC Forensic Audit...");
+          showToast("⚡ Scan initialized: " + sessionId);
+
+          // Phase 1: PERM SCAN
+          updatePhase("PERM SCAN");
+          showProgressBar(true);
+
+          // Connect listener (Firebase or Local Polling)
+          if (isFirebaseConfigured && typeof firebase !== 'undefined') {
+            listenToFirebase();
+          } else {
+            listenToLocalEvents();
+          }
+
+          // Start timer
+          timerInterval = setInterval(updateTimer, 1000);
+          // Narration interval — every 15 seconds
+          narrationInterval = setInterval(requestNarration, 15000);
+
+          // Transition logic: After ~45s or 30 events, move to LIVE MONITOR
+          setTimeout(() => {
+            if (scanActive && document.getElementById("stat-eta").textContent === "PERM SCAN") {
+               updatePhase("LIVE MONITOR");
+               showProgressBar(false);
+               setStatus(true, "🟢 LIVE FORENSIC MONITORING");
+            }
+          }, 45000);
+
+        } else {
+          showToast("❌ Error: " + data.error);
+        }
+
+      } catch (e) {
+        showToast("❌ Could not connect to backend. Is Flask running?");
+        console.error(e);
+      }
+    }
+
+    function updatePhase(phase) {
+      const eta = document.getElementById("stat-eta");
+      eta.textContent = phase;
+      if (phase === "PERM SCAN") eta.style.color = "var(--yellow)";
+      if (phase === "LIVE MONITOR") eta.style.color = "var(--green)";
+      if (phase === "COMPLETE") eta.style.color = "var(--cyan)";
+    }
+
+    function showProgressBar(show) {
+      const bar = document.getElementById("scan-progress-bar");
+      const fill = document.getElementById("scan-progress-fill");
+      if (show) {
+        bar.style.display = "block";
+        fill.style.width = "0%";
+        setTimeout(() => fill.style.width = "100%", 100);
+      } else {
+        fill.style.transition = "opacity 0.5s";
+        fill.style.opacity = "0";
+        setTimeout(() => {
+          bar.style.display = "none";
+          fill.style.width = "0%";
+          fill.style.opacity = "1";
+          fill.style.transition = "width 0.5s ease";
+        }, 500);
+      }
+    }
+
+    // ── STOP SCAN ──
+    async function stopScan() {
+      if (!scanActive) return;
+
+      const mode = document.getElementById("scan-mode").value;
+      if (mode === "pc") {
+        await fetch(`${BACKEND_URL}/api/stop-scan`, { method: "POST" });
+      }
+
+      scanActive = false;
+      clearInterval(timerInterval);
+      clearInterval(narrationInterval);
+      
+      updatePhase("COMPLETE");
+      showProgressBar(false);
+      setStatus(false, `✅ Scan complete — ${threatCount} unique threats found.`);
+      showToast("🏁 Investigation Finished");
+
+      // Update button to NEW SCAN
+      const startBtn = document.querySelector(".btn-start");
+      startBtn.textContent = "🔄 NEW SCAN";
+      startBtn.classList.add("btn-new");
+
+      renderSummaryCard();
+    }
+
+    function renderSummaryCard() {
+      const feed = document.getElementById("threat-feed");
+      const duration = document.getElementById("stat-time").textContent;
+      
+      const crits = allThreatEvents.filter(e => e.severity === 'CRITICAL').length;
+      const highs = allThreatEvents.filter(e => e.severity === 'HIGH').length;
+      const meds = allThreatEvents.filter(e => e.severity === 'MEDIUM').length;
+
+      const card = document.createElement("div");
+      card.className = "scan-summary-card";
+      card.innerHTML = `
+        <div class="ss-header">🏁 FORENSIC INVESTIGATION REPORT</div>
+        <div class="ss-stats">
+          <span style="color:var(--red)">🔴 CRITICAL: ${crits}</span>
+          <span style="color:var(--orange)">🟠 HIGH: ${highs}</span>
+          <span style="color:var(--yellow)">🟡 MEDIUM: ${meds}</span>
+          <span style="color:var(--cyan)">⏱ DURATION: ${duration}</span>
+        </div>
+        <div class="ss-verdict">
+          <strong>Final Verdict:</strong> ${document.getElementById("ai-feed").firstElementChild?.textContent || "No critical compromises detected. Review high-risk apps manually."}
+        </div>
+        <button onclick="generateReport()" class="btn btn-report ss-btn">
+          ⬇ DOWNLOAD FULL FORENSIC PDF
+        </button>
+      `;
+      
+      feed.prepend(card);
+    }
+
+    function showLocalSummary() {
+      const criticals = threatCount; // Simple summary for mobile
+      addAINarration("SCAN COMPLETE: Analyzed device security posture. " + threatCount + " total app observations. Found " + appsFlagged.size + " potentially risky apps.");
+      alert("📊 SCAN REPORT\n\nTotal observations: " + threatCount + "\nRisky Apps: " + appsFlagged.size + "\n\nPlease check the Live Feed for details.");
+    }
+
+    // ── GENERATE REPORT ──
+    async function generateReport() {
+      if (!sessionId) {
+        showToast("❌ No scan session found. Run a scan first.");
+        return;
+      }
+      showToast("🤖 Generating AI forensic report...");
+
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/generate-report`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: sessionId })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast("✅ Report ready! Downloading PDF...");
+          window.open(`${BACKEND_URL}${data.pdf_url}`, "_blank");
+        } else {
+          showToast("❌ Report failed: " + data.error);
+        }
+      } catch (e) {
+        showToast("❌ Report error: " + e.message);
+      }
+    }
+
+    // ── FIREBASE LISTENER ──
+    function listenToFirebase() {
+      if (!sessionId) return;
+      try {
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Listen to live threat events
+        db.ref(`events/${sessionId}`).on("child_added", (snap) => {
+          const event = snap.val();
+          if (!event) return;
+          addThreatToFeed(event);
+          pendingEvents.push(event);
+          updateStats(event);
+        });
+
+        // Listen to app scores
+        db.ref(`app_scores/${sessionId}`).on("value", (snap) => {
+          const scores = snap.val();
+          if (scores) updateScoresList(scores);
+        });
+      } catch (err) {
+        console.warn("Firebase init failed, falling back to local polling:", err);
+        listenToLocalEvents();
+      }
+    }
+
+    // ── LOCAL EVENT POLLING (Fallback) ──
+    function listenToLocalEvents() {
+      console.log("Using Local Event Polling fallback...");
+      showToast("💻 Using Local Dashboard Mode");
+
+      let lastSeenIndex = 0;
+
+      const pollInterval = setInterval(async () => {
+        if (!scanActive) {
+          clearInterval(pollInterval);
+          return;
+        }
+
+        try {
+          const res = await fetch(`${BACKEND_URL}/api/live-events?since=${lastSeenIndex}`);
+          const data = await res.json();
+
+          // New API returns { events: [], total: N }
+          const events = Array.isArray(data) ? data : (data.events || []);
+          const total = data.total || (lastSeenIndex + events.length);
+
+          events.forEach(event => {
+            addThreatToFeed(event);
+            updateStats(event);
+            updateScoresList(event.threat_score ? { [event.app]: { app: event.app, score: event.threat_score } } : {});
+          });
+
+          // Advance pointer so we don't re-fetch the same events
+          lastSeenIndex = total;
+
+          // Update scores panel via scan-status endpoint
+          if (events.length > 0) {
+            fetchAndUpdateScores();
+          }
+        } catch (e) {
+          console.error("Local polling error:", e);
+        }
+      }, 2000);
+    }
+
+    async function fetchAndUpdateScores() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/scan-status`);
+        const data = await res.json();
+        if (data.app_scores) updateScoresList(data.app_scores);
+      } catch (e) { /* silent */ }
+    }
+
+    // ── ADD THREAT TO FEED ──
+    const seenEventIds = new Set();
+
+    function addThreatToFeed(event) {
+      if (!event) return;
+
+      // Unique ID for deduplication: app + type + timestamp + description
+      const eventId = `${event.app}_${event.type}_${event.timestamp}_${event.description}`;
+      if (seenEventIds.has(eventId)) return;
+      seenEventIds.add(eventId);
+
+      // ── AUTO STOP: scan_complete signal from backend ──
+      if (event.type === "scan_complete") {
+        if (scanActive) {
+          scanActive = false;
+          clearInterval(timerInterval);
+          clearInterval(narrationInterval);
+          
+          setStatus(false, `✅ Scan complete — ${threatCount} unique threats found`);
+          showToast("✅ Scan finished automatically!");
+          
+          // Show Modal with Final Stats
+          document.getElementById("modal-threats").textContent = threatCount;
+          document.getElementById("modal-apps").textContent = appsFlagged.size;
+          document.getElementById("modal-time").textContent = document.getElementById("stat-time").textContent;
+          document.getElementById("scan-modal").classList.add("show");
+          
+          addAINarration(`FORENSIC SCAN COMPLETE — Generating final verdict...`);
+          requestNarration(true); // FINAL AI VERDICT
+        }
+        return;
+      }
+
+      // Store in master list if new
+      if (!allThreatEvents.some(e => e.description === event.description && e.timestamp === event.timestamp)) {
+        allThreatEvents.push(event);
+      }
+
+      // Filter check
+      if (activeFilter) {
+        if (!event.description.includes(activeFilter) && !(event.permissions && event.permissions.includes(activeFilter))) {
+          return; // Skip rendering if filtered out
+        }
+      }
+
+      addThreatUI(event);
+    }
+
+    function addThreatUI(event) {
+      const feed = document.getElementById("threat-feed");
+
+      // Remove empty state
+      const empty = feed.querySelector(".empty-feed");
+      if (empty) empty.remove();
+
+      // Populate permissionRegistry
+      if (event.permissions_involved) {
+        event.permissions_involved.forEach(perm => {
+          if (!permissionRegistry[perm]) {
+            permissionRegistry[perm] = { apps: {}, total_violations: 0 };
+          }
+
+          const appPkg = event.app || "unknown";
+          if (!permissionRegistry[perm].apps[appPkg]) {
+            permissionRegistry[perm].apps[appPkg] = {
+              count: 0,
+              worst_context: "Informational",
+              threat_score: 0,
+              tags: new Set(),
+              last_seen: null
+            };
+          }
+
+          const entry = permissionRegistry[perm].apps[appPkg];
+          entry.count++;
+          permissionRegistry[perm].total_violations++;
+          entry.last_seen = event.timestamp || new Date().toISOString();
+
+          // Update worst score and context if this event is more severe
+          const newScore = event.threat_score || 0;
+          if (newScore > entry.threat_score) {
+            entry.threat_score = newScore;
+            entry.worst_context = event.description || entry.worst_context;
+          }
+
+          // Generate tags
+          if (event.is_false_positive) entry.tags.add("NORMAL");
+          if (event.is_odd_hour || (event.context && event.context.is_night)) entry.tags.add("NIGHT");
+          if (event.context && event.context.financial_app_open) entry.tags.add("PAYMENT");
+          if (event.context && event.context.screen_on === false) entry.tags.add("BACKGROUND");
+          if (event.combo_triggered === "PASSIVE_PROFILING") entry.tags.add("PROFILING");
+
+        });
+      }
+
+      const sev = event.severity || "LOW";
+      const severityIcons = { CRITICAL: "🔴", HIGH: "🟠", MEDIUM: "🟡", LOW: "🔵", INFORMATIONAL: "⚪" };
+      const severityClass = { CRITICAL: "sev-crit", HIGH: "sev-high", MEDIUM: "sev-med", LOW: "sev-low", INFORMATIONAL: "sev-low" };
+      const scoreClass = { CRITICAL: "score-crit", HIGH: "score-high", MEDIUM: "score-med", LOW: "score-low" };
+
+      const timeStr = event.timestamp ? new Date(event.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
+
+      const div = document.createElement("div");
+      div.className = `threat-item ${sev}`;
+
+      const nightBadge = event.is_odd_hour ? `<span class="night-badge">🌙 NIGHT ACTIVITY</span>` : "";
+      const profileBadge = event.combo_triggered === "PASSIVE_PROFILING" ? `<span class="night-badge" style="background:#00e5ff33; color:#00e5ff; border-color:#00e5ff">👁 PROFILING DETECTED</span>` : "";
+      const histBadge = event.historical ? `<span class="night-badge" style="background:#9c27b033; color:#ce93d8; border-color:#9c27b0">📂 HISTORICAL</span>` : "";
+      const dataLeak = event.type === "network_forensic" ? `<span class="night-badge" style="background:#ff3c5f33; color:#ff3c5f; border-color:#ff3c5f">📤 DATA LEAK</span>` : "";
+      const wakeBadge = event.type === "wakelock_forensic" ? `<span class="night-badge" style="background:#ff980033; color:#ff9800; border-color:#ff9800">🔋 WAKELOCK ABUSE</span>` : "";
+      const deepBadge = event.type === "deep_activity_scan" ? `<span class="night-badge" style="background:#00ff9d33; color:#00ff9d; border-color:#00ff9d">⚡ LIVE ACTIVE</span>` : "";
+
+      // Justification & Safety Label
+      let justification = "Informational: App currently has these permissions granted.";
+      let statusLabel = "SAFE USE";
+      let statusColor = "#00ff9d"; // var(--green)
+
+      if (event.threat_score >= 70) {
+        statusLabel = "CRITICAL THREAT";
+        statusColor = "#ff3c5f"; // var(--red)
+        justification = `CRITICAL: ${event.description || "Highly suspicious behavior detected."}`;
+      } else if (event.threat_score >= 40) {
+        statusLabel = "POTENTIAL THREAT";
+        statusColor = "#ff9800"; // var(--orange)
+        justification = `WARNING: ${event.description || "Unusual permission access detected."}`;
+      } else if (event.historical) {
+        statusLabel = "FORENSIC RECORD";
+        statusColor = "#ce93d8";
+        justification = `Past activity: ${event.description}`;
+      }
+
+      div.innerHTML = `
+    <span class="threat-icon">${severityIcons[sev] || "⚪"}</span>
+    <div class="threat-body">
+      <div class="threat-app">${event.app || "unknown"} <span class="sev ${severityClass[sev]}">${sev}</span> ${nightBadge} ${profileBadge} ${histBadge} ${dataLeak} ${wakeBadge} ${deepBadge}</div>
+      <div class="threat-desc">${event.description || "Unknown activity"}</div>
+      <div class="threat-justification" style="margin-top: 8px; padding: 6px 10px; background: rgba(0,0,0,0.3); border-left: 3px solid ${statusColor}; font-size: 11px; color: #ccc; border-radius: 0 4px 4px 0;">
+        <span style="color: ${statusColor}; font-weight: bold; font-size: 9px; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">IDENTIFIED AS: ${statusLabel}</span>
+        ${justification}
+      </div>
+      <div class="threat-time">${timeStr} — ${event.type || "event"}</div>
+    </div>
+    <div class="threat-score ${scoreClass[sev]}">${event.threat_score || 0}</div>
+  `;
+
+      feed.prepend(div); // Newest at top
+
+      // Update feed count
+      threatCount++;
+      document.getElementById("feed-count").textContent = `${threatCount} EVENTS`;
+    }
+
+    // ── UPDATE APP SCORES ──
+    function updateScoresList(scores) {
+      const list = document.getElementById("scores-list");
+      const sorted = Object.values(scores).sort((a, b) => b.score - a.score);
+
+      list.innerHTML = sorted.slice(0, 12).map(item => {
+        const score = item.score || 0;
+        const color = score >= 70 ? "#ff3c5f" : score >= 40 ? "#ff8c42" : score >= 20 ? "#ffe94d" : "#3a6b5d";
+        return `
+      <div class="score-row">
+        <span class="score-app-name" title="${item.app}">${item.app}</span>
+        <div class="score-bar-wrap">
+          <div class="score-bar" style="width:${score}%;background:${color}"></div>
+        </div>
+        <span class="score-num" style="color:${color}">${score}</span>
+      </div>
+    `;
+      }).join("");
+
+      appsFlagged = new Set(sorted.map(s => s.app));
+      document.getElementById("stat-apps").textContent = appsFlagged.size;
+    }
+
+    // ── UPDATE STATS ──
+    function updateStats(event) {
+      document.getElementById("stat-threats").textContent = threatCount;
+
+      // Update permission map
+      if (event && event.permissions_involved && Array.isArray(event.permissions_involved)) {
+        event.permissions_involved.forEach(p => {
+          permCounts[p] = (permCounts[p] || 0) + 1;
+          const cell = document.getElementById(`perm-${p}`);
+          const cnt = document.getElementById(`perm-count-${p}`);
+          if (cell) {
+            cell.classList.add("active");
+            // Check if already active to apply a "new hit" flash
+            cell.classList.remove("flash-red");
+            void cell.offsetWidth; // trigger reflow
+            cell.classList.add("flash-red");
+          }
+          if (cnt) cnt.textContent = permCounts[p];
+        });
+      }
+    }
+
+    // ── REQUEST AI NARRATION ──
+    async function requestNarration(isFinal = false) {
+      if (!scanActive && !isFinal) return;
+      try {
+        const url = isFinal ? `${BACKEND_URL}/api/narration?is_final=true` : `${BACKEND_URL}/api/narration`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.text) {
+          addAINarration(data.text);
+          if (isFinal) {
+            document.getElementById("modal-verdict").textContent = data.text;
+          }
+        }
+      } catch (e) {
+        console.error("Narration error:", e);
+      }
+    }
+
+    function closeModal() {
+      document.getElementById("scan-modal").classList.remove("show");
+    }
+
+    // ── ADD AI NARRATION ──
+    function addAINarration(text) {
+      const feed = document.getElementById("ai-feed");
+      const empty = feed.querySelector(".ai-empty");
+      if (empty) empty.remove();
+
+      const timeStr = new Date().toLocaleTimeString("en-IN", { hour12: false });
+
+      const div = document.createElement("div");
+      div.className = "ai-message";
+      div.innerHTML = `
+    <div class="ai-meta">// ANALYST UPDATE — ${timeStr}</div>
+    <div class="ai-text" id="ai-typing-${Date.now()}"></div>
+  `;
+      feed.prepend(div);
+
+      // Typewriter effect
+      const target = div.querySelector(".ai-text");
+      let i = 0;
+      const interval = setInterval(() => {
+        target.textContent = text.slice(0, i++);
+        if (i > text.length) clearInterval(interval);
+      }, 18);
+    }
+
+    // ── TIMER ──
+    function updateTimer() {
+      if (!startTime) return;
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
+      const ss = String(elapsed % 60).padStart(2, "0");
+      document.getElementById("stat-time").textContent = `${mm}:${ss}`;
+    }
+
+    // ── STATUS ──
+    function setStatus(active, text) {
+      const dot = document.getElementById("status-dot");
+      const txt = document.getElementById("status-text");
+      dot.className = "status-dot" + (active ? " active" : "");
+      txt.textContent = text;
+      txt.style.color = active ? "var(--green)" : "var(--dim)";
+    }
+
+    // ── TOAST ──
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.textContent = msg;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 3500);
+    }
+
+    function switchTab(tabId, btn) {
+      // Update buttons
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      // Update panels
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active-tab'));
+
+      if (tabId === 'threats') {
+        document.querySelector('.threat-panel').classList.add('active-tab');
+      } else if (tabId === 'ai') {
+        document.querySelector('.ai-panel').classList.add('active-tab');
+      } else if (tabId === 'scores') {
+        document.querySelector('.scores-panel').classList.add('active-tab');
+      }
+
+      showToast("Switching to: " + tabId.toUpperCase());
+    }
+
+    // ── V3 MONITOR CONTROLS ──────────────────────────────────────────────
+    let _monitorPollInterval = null;
+    let _adPollInterval      = null;
+    let _activeMonitorMode   = null;
+
+    async function startMonitor(mode) {
+      const targetApp = (mode === 'live')
+        ? document.getElementById('live-app-select').value
+        : undefined;
+
+      const body = { mode };
+      if (targetApp) body.target_app = targetApp;
+
+      try {
+        const res = await fetch('/api/start-monitor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          _activeMonitorMode = mode;
+          _setMonitorCardRunning(mode);
+          document.getElementById('monitor-status-bar').style.display = 'flex';
+          document.getElementById('mstat-mode').textContent = mode.toUpperCase();
+          setStatus(true, `🔴 ${mode.toUpperCase()} MONITOR ACTIVE — watching your device...`);
+          showToast(`✅ ${mode.toUpperCase()} monitor started!`);
+
+          // Start polling for live status
+          clearInterval(_monitorPollInterval);
+          _monitorPollInterval = setInterval(pollMonitorStatus, 4000);
+
+          // Poll ad correlations every 10s
+          clearInterval(_adPollInterval);
+          _adPollInterval = setInterval(refreshAdCorrelations, 10000);
+        } else {
+          showToast(`❌ ${data.error || data.message || 'Failed to start monitor'}`);
+        }
+      } catch (e) {
+        showToast('❌ Could not connect to backend. Is Flask running?');
+      }
+    }
+
+    async function stopMonitor() {
+      try {
+        const res = await fetch('/api/stop-monitor', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          _clearMonitorCards();
+          document.getElementById('monitor-status-bar').style.display = 'none';
+          clearInterval(_monitorPollInterval);
+          clearInterval(_adPollInterval);
+          _activeMonitorMode = null;
+          setStatus(false, 'MONITOR STOPPED — final report generating...');
+          showToast('✅ Monitor stopped cleanly.');
+          // Do a final ad correlation refresh
+          setTimeout(refreshAdCorrelations, 2000);
+        } else {
+          showToast('No active monitor to stop.');
+        }
+      } catch (e) {
+        showToast('❌ Backend unreachable.');
+      }
+    }
+
+    async function pollMonitorStatus() {
+      try {
+        const res = await fetch('/api/monitor-status');
+        const s   = await res.json();
+        if (!s.running) {
+          clearInterval(_monitorPollInterval);
+          _clearMonitorCards();
+          document.getElementById('monitor-status-bar').style.display = 'none';
+          _activeMonitorMode = null;
+          setStatus(false, 'MONITOR COMPLETED — check ad profiling table below.');
+          return;
+        }
+        // Update status bar
+        document.getElementById('mstat-events').textContent  = s.event_count  || 0;
+        document.getElementById('mstat-threats').textContent = s.threat_count || 0;
+        const rt = s.runtime_seconds || 0;
+        const mm = String(Math.floor(rt / 60)).padStart(2,'0');
+        const ss = String(rt % 60).padStart(2,'0');
+        const rtStr = `${mm}:${ss}`;
+        document.getElementById('mstat-runtime').textContent = rtStr;
+        // Update card runtime label
+        const rid = `runtime-${_activeMonitorMode}`;
+        if (document.getElementById(rid))
+          document.getElementById(rid).textContent = `⏱ ${rtStr}`;
+      } catch (_) {}
+    }
+
+    async function refreshAdCorrelations() {
+      try {
+        const res = await fetch('/api/ad-correlations');
+        const corrs = await res.json();
+        const tbody = document.getElementById('ad-table-body');
+        document.getElementById('ad-count-badge').textContent = `${corrs.length} CORRELATIONS`;
+
+        if (!corrs.length) return;
+
+        tbody.innerHTML = corrs.map(c => {
+          const prob = c.probability || '';
+          const probClass = prob.includes('HIGH') ? 'prob-high'
+                          : prob.includes('MED')  ? 'prob-med'
+                          : 'prob-low';
+          const app = (c.app || '').replace('com.','').replace('.android','');
+          const t   = c.mic_time ? new Date(c.mic_time).toLocaleTimeString() : '--';
+          const gap = c.seconds_gap != null ? `${Number(c.seconds_gap).toFixed(1)}s` : '--';
+          return `<tr>
+            <td title="${c.app}">${app}</td>
+            <td>${t}</td>
+            <td style="color:var(--orange)">${c.ad_server || '--'}</td>
+            <td>${gap}</td>
+            <td class="${probClass}">${prob}</td>
+          </tr>`;
+        }).join('');
+      } catch (_) {}
+    }
+
+    function _setMonitorCardRunning(mode) {
+      ['24hr','quick','live'].forEach(m => {
+        document.getElementById(`card-${m}`)?.classList.remove('running-mode','active-mode');
+        const btn = document.getElementById(`btn-${m}`);
+        if (btn) { btn.disabled = false; btn.textContent = btn.getAttribute('data-default') || btn.textContent; }
+      });
+      const card = document.getElementById(`card-${mode}`);
+      const btn  = document.getElementById(`btn-${mode}`);
+      if (card) {
+        card.classList.add('running-mode');
+        btn.setAttribute('data-default', btn.textContent);
+        btn.textContent = '🔴 MONITORING...';
+        btn.disabled = true;
+      }
+    }
+
+    function _clearMonitorCards() {
+      ['24hr','quick','live'].forEach(m => {
+        document.getElementById(`card-${m}`)?.classList.remove('running-mode','active-mode');
+        const btn = document.getElementById(`btn-${m}`);
+        if (btn) { btn.disabled = false; const d = btn.getAttribute('data-default'); if(d) btn.textContent = d; }
+        const rid = document.getElementById(`runtime-${m}`);
+        if (rid) rid.textContent = '⏱ --:--';
+      });
+    }
+    // ── END V3 MONITOR CONTROLS ──────────────────────────────────────────
+
+    // ── INIT ──
+    initPermGrid();
+
+    // Ensure first panel is visible on mobile if needed
+    window.onload = () => {
+      if (window.innerWidth <= 900) {
+        document.querySelector('.threat-panel').classList.add('active-tab');
+      }
+    };
+  </script>
+
+</body>
+
+</html>

@@ -1,0 +1,27 @@
+# PhantomDroid — Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Web framework
+flask==3.0.3
+flask-cors==4.0.1
+
+# Production WSGI server (Railway deployment)
+gunicorn==21.2.0
+
+# Firebase
+pyrebase4==4.7.1
+
+# Database
+mysql-connector-python==9.0.0
+
+# PDF generation
+fpdf2==2.8.1
+
+# HTTP requests (VirusTotal)
+requests>=2.19.1,<2.30
+
+# Environment variables
+python-dotenv==1.0.1
+
+# Multi-provider AI client (Groq / Cerebras / OpenRouter / Gemini)
+openai>=1.0.0

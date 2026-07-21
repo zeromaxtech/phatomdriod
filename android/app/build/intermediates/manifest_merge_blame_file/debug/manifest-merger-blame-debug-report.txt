@@ -1,0 +1,106 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.phantomdroid.security"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="26"
+9        android:targetSdkVersion="33" />
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:5:5-67
+11-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:5:22-64
+12    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+12-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:6:5-79
+12-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:6:22-76
+13    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+13-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:7:5-75
+13-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:7:22-72
+14    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+14-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:8:5-77
+14-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:8:22-74
+15    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+15-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:9:5-81
+15-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:9:22-78
+16    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+16-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:10:5-77
+16-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:10:22-74
+17
+18    <permission
+18-->[androidx.core:core:1.9.0] C:\Users\Nikhil\.gradle\caches\8.14.3\transforms\c6ec7e71e2c7acbe397ffb56f714662d\transformed\core-1.9.0\AndroidManifest.xml:22:5-24:47
+19        android:name="com.phantomdroid.security.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+19-->[androidx.core:core:1.9.0] C:\Users\Nikhil\.gradle\caches\8.14.3\transforms\c6ec7e71e2c7acbe397ffb56f714662d\transformed\core-1.9.0\AndroidManifest.xml:23:9-81
+20        android:protectionLevel="signature" />
+20-->[androidx.core:core:1.9.0] C:\Users\Nikhil\.gradle\caches\8.14.3\transforms\c6ec7e71e2c7acbe397ffb56f714662d\transformed\core-1.9.0\AndroidManifest.xml:24:9-44
+21
+22    <uses-permission android:name="com.phantomdroid.security.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+22-->[androidx.core:core:1.9.0] C:\Users\Nikhil\.gradle\caches\8.14.3\transforms\c6ec7e71e2c7acbe397ffb56f714662d\transformed\core-1.9.0\AndroidManifest.xml:26:5-97
+22-->[androidx.core:core:1.9.0] C:\Users\Nikhil\.gradle\caches\8.14.3\transforms\c6ec7e71e2c7acbe397ffb56f714662d\transformed\core-1.9.0\AndroidManifest.xml:26:22-94
+23
+24    <application
+24-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:12:5-30:19
+25        android:allowBackup="true"
+25-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:13:9-35
+26        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+26-->[androidx.core:core:1.9.0] C:\Users\Nikhil\.gradle\caches\8.14.3\transforms\c6ec7e71e2c7acbe397ffb56f714662d\transformed\core-1.9.0\AndroidManifest.xml:28:18-86
+27        android:debuggable="true"
+28        android:extractNativeLibs="false"
+29        android:icon="@mipmap/ic_launcher"
+29-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:14:9-43
+30        android:label="PhantomDroid"
+30-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:15:9-37
+31        android:roundIcon="@mipmap/ic_launcher_round"
+31-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:16:9-54
+32        android:supportsRtl="true"
+32-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:17:9-35
+33        android:theme="@style/Theme.PhantomDroid"
+33-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:18:9-50
+34        android:usesCleartextTraffic="true" >
+34-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:19:9-44
+35        <activity
+35-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:20:9-29:20
+36            android:name="com.phantomdroid.security.MainActivity"
+36-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:21:13-41
+37            android:configChanges="orientation|screenSize|keyboardHidden"
+37-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:24:13-74
+38            android:exported="true"
+38-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:22:13-36
+39            android:screenOrientation="portrait" >
+39-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:23:13-49
+40            <intent-filter>
+40-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:25:13-28:29
+41                <action android:name="android.intent.action.MAIN" />
+41-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:26:17-69
+41-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:26:25-66
+42
+43                <category android:name="android.intent.category.LAUNCHER" />
+43-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:27:17-77
+43-->D:\cybersecturity\phantomdroid\android\app\src\main\AndroidManifest.xml:27:27-74
+44            </intent-filter>
+45        </activity>
+46
+47        <provider
+47-->[androidx.emoji2:emoji2:1.2.0] C:\Users\Nikhil\.gradle\caches\8.14.3\transforms\e4de9e0e32671cf6655b2b6d5b5fe980\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:24:9-32:20
+48            android:name="androidx.startup.InitializationProvider"
+48-->[androidx.emoji2:emoji2:1.2.0] C:\Users\Nikhil\.gradle\caches\8.14.3\transforms\e4de9e0e32671cf6655b2b6d5b5fe980\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:25:13-67
+49            android:authorities="com.phantomdroid.security.androidx-startup"
+49-->[androidx.emoji2:emoji2:1.2.0] C:\Users\Nikhil\.gradle\caches\8.14.3\transforms\e4de9e0e32671cf6655b2b6d5b5fe980\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:26:13-68
+50            android:exported="false" >
+50-->[androidx.emoji2:emoji2:1.2.0] C:\Users\Nikhil\.gradle\caches\8.14.3\transforms\e4de9e0e32671cf6655b2b6d5b5fe980\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:27:13-37
+51            <meta-data
+51-->[androidx.emoji2:emoji2:1.2.0] C:\Users\Nikhil\.gradle\caches\8.14.3\transforms\e4de9e0e32671cf6655b2b6d5b5fe980\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:29:13-31:52
+52                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+52-->[androidx.emoji2:emoji2:1.2.0] C:\Users\Nikhil\.gradle\caches\8.14.3\transforms\e4de9e0e32671cf6655b2b6d5b5fe980\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:30:17-75
+53                android:value="androidx.startup" />
+53-->[androidx.emoji2:emoji2:1.2.0] C:\Users\Nikhil\.gradle\caches\8.14.3\transforms\e4de9e0e32671cf6655b2b6d5b5fe980\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:31:17-49
+54            <meta-data
+54-->[androidx.lifecycle:lifecycle-process:2.4.1] C:\Users\Nikhil\.gradle\caches\8.14.3\transforms\824402c2d812e4917ddb92a807654956\transformed\jetified-lifecycle-process-2.4.1\AndroidManifest.xml:31:13-33:52
+55                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+55-->[androidx.lifecycle:lifecycle-process:2.4.1] C:\Users\Nikhil\.gradle\caches\8.14.3\transforms\824402c2d812e4917ddb92a807654956\transformed\jetified-lifecycle-process-2.4.1\AndroidManifest.xml:32:17-78
+56                android:value="androidx.startup" />
+56-->[androidx.lifecycle:lifecycle-process:2.4.1] C:\Users\Nikhil\.gradle\caches\8.14.3\transforms\824402c2d812e4917ddb92a807654956\transformed\jetified-lifecycle-process-2.4.1\AndroidManifest.xml:33:17-49
+57        </provider>
+58    </application>
+59
+60</manifest>

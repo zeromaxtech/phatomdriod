@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>👻 PhantomDroid — Live Security Monitor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;500;700&display=swap"
+    rel="stylesheet" />
+  <!-- Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #020c0e;
+      --panel: #040f12;
+      --panel2: #061418;
+      --border: #0ff2;
+      --green: #00ff9d;
+      --cyan: #00e5ff;
+      --red: #ff3c5f;
+      --yellow: #ffe94d;
+      --orange: #ff8c42;
+      --dim: #3a6b5d;
+      --text: #b8f0d8;
+      --mono: 'Share Tech Mono', monospace;
+      --sans: 'Rajdhani', sans-serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      min-height: 100vh;
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 60px, #00ff9d03 60px, #00ff9d03 61px),
+        repeating-linear-gradient(90deg, transparent, transparent 60px, #00ff9d03 60px, #00ff9d03 61px);
+      overflow-x: hidden;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 28px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, #041014 0%, var(--bg) 100%);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      font-size: 28px;
+    }
+
+    .logo h1 {
+      font-family: var(--sans);
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 6px;
+      color: var(--green);
+      text-shadow: 0 0 20px #00ff9d66;
+    }
+
+    .logo p {
+      font-size: 10px;
+      color: var(--dim);
+      letter-spacing: 2px;
+      margin-top: 2px;
+    }
+
+    .header-stats {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .stat-pill {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 20px;
+      text-align: center;
+    }
+
+    .stat-pill .val {
+      font-family: var(--sans);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--cyan);
+      display: block;
+    }
+
+    .stat-pill .lbl {
+      font-size: 9px;
+      color: var(--dim);
+      letter-spacing: 1px;
+    }
+
+    /* Scan controls */
+    .scan-controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 2px;
+      padding: 8px 18px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+    }
+
+    .btn-start {
+      background: var(--green);
+      color: #000;
+      box-shadow: 0 0 16px #00ff9d44;
+    }
+
+    .btn-start:hover {
+      background: #00ffb3;
+      box-shadow: 0 0 24px #00ff9d77;
+    }
+
+    .btn-stop {
+      background: transparent;
+      color: var(--red);
+      border: 1px solid var(--red);
+    }
+
+    .btn-stop:hover {
+      background: #ff3c5f22;
+    }
+
+    .btn-report {
+      background: transparent;
+      color: var(--cyan);
+      border: 1px solid var(--cyan);
+    }
+
+    .btn-report:hover {
+      background: #00e5ff22;
+    }
+
+    /* ── STATUS BAR ── */
+    .status-bar {
+      padding: 8px 28px;
+      background: var(--panel2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--dim);
+      flex-shrink: 0;
+    }
+
+    .status-dot.active {
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: 0.4
+      }
+    }
+
+    #status-text {
+      color: var(--dim);
+    }
+
+    /* ── MAIN GRID ── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      grid-template-rows: auto auto;
+      gap: 16px;
+      padding: 16px 20px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 900px) {
+      .header {
+        flex-direction: column;
+        gap: 15px;
+        padding: 10px;
+      }
+
+      .header-stats {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .main-grid {
+        grid-template-columns: 1fr;
+        padding: 10px;
+      }
+
+      .ai-panel {
+        grid-column: 1;
+        grid-row: auto;
+      }
+
+      .logo h1 {
+        font-size: 20px;
+        letter-spacing: 2px;
+      }
+
+      /* Hide panels by default on mobile, shown via tabs */
+      .main-grid {
+        display: block;
+        /* Stack vertically if needed, but we handle via tabs */
+      }
+
+      .panel {
+        display: none;
+        margin-bottom: 0;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+      }
+
+      .panel.active-tab {
+        display: block;
+      }
+
+      .mobile-tabs {
+        display: flex !important;
+      }
+    }
+
+    /* ── MOBILE TABS ── */
+    .mobile-tabs {
+      display: none;
+      background: var(--panel2);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 130px;
+      /* Below header on mobile */
+      z-index: 90;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 12px 5px;
+      background: transparent;
+      border: none;
+      color: var(--dim);
+      font-family: var(--sans);
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-align: center;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.3s;
+    }
+
+    .tab-btn.active {
+      color: var(--cyan);
+      border-bottom-color: var(--cyan);
+      background: #00e5ff08;
+    }
+
+    .tab-btn .t-icon {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 2px;
+    }
+
+    /* ── PANELS ── */
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--panel2);
+    }
+
+    .panel-title {
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: var(--cyan);
+    }
+
+    .panel-badge {
+      font-size: 9px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      border: 1px solid currentColor;
+    }
+
+    /* ── LIVE THREAT FEED ── */
+    .threat-feed {
+      height: 380px;
+      overflow-y: auto;
+      padding: 8px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--dim) transparent;
+    }
+
+    .threat-item {
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      border-radius: 4px;
+      border-left: 3px solid var(--dim);
+      background: #ffffff04;
+      animation: slideIn 0.3s ease;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      align-items: start;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .threat-item.CRITICAL {
+      border-left-color: var(--red);
+      background: #ff3c5f08;
+    }
+
+    .threat-item.HIGH {
+      border-left-color: var(--orange);
+      background: #ff8c4208;
+    }
+
+    .threat-item.MEDIUM {
+      border-left-color: var(--yellow);
+      background: #ffe94d08;
+    }
+
+    .threat-item.LOW {
+      border-left-color: var(--dim);
+    }
+
+    .threat-icon {
+      font-size: 16px;
+      margin-top: 1px;
+    }
+
+
+    .threat-app {
+      font-size: 11px;
+      color: var(--cyan);
+      margin-bottom: 2px;
+    }
+
+    .threat-desc {
+      font-size: 11px;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .threat-time {
+      font-size: 9px;
+      color: var(--dim);
+    }
+
+    .threat-score {
+      font-family: var(--sans);
+      font-size: 20px;
+      font-weight: 700;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .score-crit {
+      color: var(--red);
+    }
+
+    .score-high {
+      color: var(--orange);
+    }
+
+    .score-med {
+      color: var(--yellow);
+    }
+
+    .score-low {
+      color: var(--dim);
+    }
+
+    /* ── AI NARRATION PANEL ── */
+    .ai-panel {
+      grid-column: 2;
+      grid-row: 1 / 3;
+    }
+
+    .ai-feed {
+      padding: 14px;
+      height: 560px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--dim) transparent;
+    }
+
+    .ai-message {
+      margin-bottom: 16px;
+      padding: 12px;
+      background: #00ff9d08;
+      border: 1px solid #00ff9d22;
+      border-radius: 6px;
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0
+      }
+
+      to {
+        opacity: 1
+      }
+    }
+
+    .ai-meta {
+      font-size: 9px;
+      color: var(--dim);
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+
+    .ai-text {
+      font-size: 11px;
+      color: var(--green);
+      line-height: 1.7;
+    }
+
+    .ai-cursor {
+      display: inline-block;
+      width: 6px;
+      height: 12px;
+      background: var(--green);
+      animation: blink 0.8s infinite;
+    }
+
+    .ai-empty {
+      color: var(--dim);
+      font-size: 11px;
+      text-align: center;
+      padding: 40px 20px;
+      line-height: 2;
+    }
+
+    /* ── APP SCORES ── */
+    .scores-panel {
+      grid-column: 1;
+    }
+
+    .scores-list {
+      padding: 12px;
+      max-height: 280px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--dim) transparent;
+    }
+
+    .score-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 0;
+      border-bottom: 1px solid #ffffff06;
+    }
+
+    .score-row:last-child {
+      border-bottom: none;
+    }
+
+    .score-app-name {
+      font-size: 11px;
+      color: var(--text);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .score-bar-wrap {
+      width: 100px;
+      height: 4px;
+      background: #ffffff11;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .score-bar {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.5s ease;
+    }
+
+    .score-num {
+      font-family: var(--sans);
+      font-weight: 700;
+      font-size: 14px;
+      width: 32px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* ── PERMISSION MAP ── */
+    .perm-grid {
+      padding: 14px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 8px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .perm-cell {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 6px;
+      text-align: center;
+      transition: all 0.3s;
+    }
+
+    .perm-cell.active {
+      border-color: var(--red);
+      background: #ff3c5f11;
+      box-shadow: 0 0 10px #ff3c5f22;
+    }
+
+    .perm-cell .p-icon {
+      font-size: 18px;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .perm-cell .p-name {
+      font-size: 9px;
+      color: var(--dim);
+      letter-spacing: 0.5px;
+    }
+
+    .perm-cell .p-count {
+      font-family: var(--sans);
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--red);
+    }
+
+    @keyframes hitFlash {
+      0% {
+        background: #ff3c5f66;
+        box-shadow: 0 0 20px var(--red);
+      }
+
+      100% {
+        background: #ff3c5f11;
+        box-shadow: 0 0 10px #ff3c5f22;
+      }
+    }
+
+    .flash-red {
+      animation: hitFlash 0.5s ease;
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-feed {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 300px;
+      color: var(--dim);
+      font-size: 11px;
+      letter-spacing: 1px;
+      line-height: 2.5;
+      text-align: center;
+    }
+
+    .empty-feed .big {
+      font-size: 40px;
+      margin-bottom: 10px;
+    }
+
+    /* ── SEVERITY BADGE ── */
+    .sev {
+      font-size: 8px;
+      padding: 1px 6px;
+      border-radius: 3px;
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+
+    .sev-crit {
+      background: #ff3c5f33;
+      color: var(--red);
+      border: 1px solid var(--red);
+    }
+
+    .sev-high {
+      background: #ff8c4233;
+      color: var(--orange);
+      border: 1px solid var(--orange);
+    }
+
+    .sev-med {
+      background: #ffe94d33;
+      color: var(--yellow);
+      border: 1px solid var(--yellow);
+    }
+
+    .sev-low {
+      background: #3a6b5d33;
+      color: var(--dim);
+      border: 1px solid var(--dim);
+    }
+
+    /* Chart canvas */
+    canvas {
+      max-height: 200px;
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--dim);
+      border-radius: 2px;
+    }
+
+    /* Notification toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 12px 18px;
+      border-radius: 6px;
+      font-size: 11px;
+      color: var(--green);
+      z-index: 999;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s;
+      max-width: 300px;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">
+      <span class="logo-icon">👻</span>
+      <div>
+        <h1>PHANTOMDROID</h1>
+        <p>// ANDROID LIVE SECURITY MONITOR</p>
+      </div>
+    </div>
+    <div class="header-stats">
+      <div class="stat-pill">
+        <span class="val" id="stat-threats">0</span>
+        <span class="lbl">THREATS</span>
+      </div>
+      <div class="stat-pill">
+        <span class="val" id="stat-apps">0</span>
+        <span class="lbl">APPS FLAGGED</span>
+      </div>
+      <div class="stat-pill">
+        <span class="val" id="stat-time">00:00</span>
+        <span class="lbl">SCAN TIME</span>
+      </div>
+    </div>
+    <div class="scan-controls">
+      <select id="scan-mode" class="btn"
+        style="background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:6px;">
+        <option value="pc">PC FORENSIC</option>
+        <option value="mobile" selected>MOBILE LOCAL</option>
+      </select>
+      <button class="btn btn-start" onclick="handleStart()">▶ START SCAN</button>
+      <button class="btn btn-stop" onclick="stopScan()">■ STOP</button>
+    </div>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <div class="status-dot" id="status-dot"></div>
+    <span id="status-text">IDLE — Connect Android phone via USB, enable USB Debugging, then press START SCAN</span>
+  </div>
+
+  <!-- MOBILE TABS -->
+  <div class="mobile-tabs">
+    <button class="tab-btn active" onclick="switchTab('threats', this)">
+      <span class="t-icon">⚡</span> THREATS
+    </button>
+    <button class="tab-btn" onclick="switchTab('ai', this)">
+      <span class="t-icon">🤖</span> AI ANALYST
+    </button>
+    <button class="tab-btn" onclick="switchTab('scores', this)">
+      <span class="t-icon">🎯</span> ANALYTICS
+    </button>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <!-- LIVE THREAT FEED -->
+    <div class="panel threat-panel active-tab">
+      <div class="panel-header">
+        <span class="panel-title">⚡ LIVE THREAT FEED</span>
+        <span class="panel-badge" id="feed-count" style="color:var(--green);border-color:var(--green)">0 EVENTS</span>
+      </div>
+      <div class="threat-feed" id="threat-feed">
+        <div class="empty-feed">
+          <span class="big">📱</span>
+          <span>Waiting for scan to start...</span>
+          <span style="color:#1a3a2d">Connect phone → Press START SCAN</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI NARRATION -->
+    <div class="panel ai-panel">
+      <div class="panel-header">
+        <span class="panel-title">🤖 AI ANALYST</span>
+        <span class="panel-badge" style="color:var(--green);border-color:var(--green)">CLAUDE</span>
+      </div>
+      <div class="ai-feed" id="ai-feed">
+        <div class="ai-empty">
+          👁 AI analyst standing by...<br><br>
+          Start a scan to receive<br>live security narration
+        </div>
+      </div>
+    </div>
+
+    <!-- APP THREAT SCORES + PERMISSION MAP -->
+    <div class="panel scores-panel">
+      <div class="panel-header">
+        <span class="panel-title">🎯 APP THREAT SCORES</span>
+        <span class="panel-badge" style="color:var(--cyan)">LIVE</span>
+      </div>
+      <div class="scores-list" id="scores-list">
+        <div style="color:var(--dim);font-size:11px;text-align:center;padding:40px">
+          No app scores yet
+        </div>
+      </div>
+      <div class="panel-header" style="border-top:1px solid var(--border);">
+        <span class="panel-title">🔑 PERMISSION ABUSE MAP</span>
+      </div>
+      <div class="perm-grid" id="perm-grid">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ── FIREBASE CONFIG ──
+    // TODO: Replace with your Firebase config from .env / Firebase Console
+    const firebaseConfig = {
+      apiKey: "YOUR_FIREBASE_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // ── STATE ──
+    let sessionId = null;
+    let scanActive = false;
+    let threatCount = 0;
+    let appsFlagged = new Set();
+    let startTime = null;
+    let timerInterval = null;
+    let pendingEvents = [];
+    let narrationInterval = null;
+    let permCounts = {};
+
+    const BACKEND_URL = "http://192.168.29.68:5000";
+
+    // ── PERMISSIONS DISPLAY MAP ──
+    const PERM_DISPLAY = [
+      { key: "RECORD_AUDIO", icon: "🎤", label: "Mic" },
+      { key: "CAMERA", icon: "📷", label: "Camera" },
+      { key: "ACCESS_FINE_LOCATION", icon: "📍", label: "GPS" },
+      { key: "ACCESS_BACKGROUND_LOCATION", icon: "🗺️", label: "BG GPS" },
+      { key: "READ_SMS", icon: "💬", label: "SMS" },
+      { key: "READ_CONTACTS", icon: "👥", label: "Contacts" },
+      { key: "READ_CALL_LOG", icon: "📞", label: "Calls" },
+      { key: "READ_PHONE_STATE", icon: "📱", label: "Identity" },
+    ];
+
+    function initPermGrid() {
+      const grid = document.getElementById("perm-grid");
+      grid.innerHTML = PERM_DISPLAY.map(p => `
+    <div class="perm-cell" id="perm-${p.key}">
+      <span class="p-icon">${p.icon}</span>
+      <span class="p-name">${p.label}</span>
+      <span class="p-count" id="perm-count-${p.key}">0</span>
+    </div>
+  `).join("");
+    }
+
+    function handleStart() {
+      const mode = document.getElementById("scan-mode").value;
+      if (mode === "mobile") {
+        startIndependentScan();
+      } else {
+        startScan();
+      }
+    }
+
+    async function startIndependentScan() {
+      try {
+        if (scanActive) return;
+
+        const startBtn = document.querySelector(".btn-start");
+        const originalText = startBtn.textContent;
+        startBtn.textContent = "⌛ INITIALIZING...";
+        startBtn.style.opacity = "0.7";
+
+        setTimeout(async () => {
+          try {
+            if (typeof AndroidHost === 'undefined') {
+              startBtn.textContent = originalText;
+              startBtn.style.opacity = "1";
+              alert("❌ System Bridge Not Found. Please restart the app.");
+              return;
+            }
+
+            scanActive = true;
+            threatCount = 0;
+            appsFlagged.clear();
+            permCounts = {};
+            startTime = Date.now();
+            setStatus(true, "Independent Mobile Scan Active");
+            document.getElementById("threat-feed").innerHTML = "";
+            document.getElementById("ai-feed").innerHTML = "";
+            initPermGrid();
+
+            timerInterval = setInterval(updateTimer, 1000);
+            startBtn.textContent = originalText;
+            startBtn.style.opacity = "1";
+
+            const sysJson = AndroidHost.getSystemInfo();
+            const sysInfo = JSON.parse(sysJson);
+            addAINarration("Scanning " + sysInfo.manufacturer + " " + sysInfo.model + " (Android " + sysInfo.version + ")");
+
+            const appsJson = AndroidHost.getInstalledApps();
+            const apps = JSON.parse(appsJson);
+
+            showToast("📱 Analyzing " + apps.length + " apps...");
+
+            apps.forEach((app, index) => {
+              setTimeout(() => {
+                if (!scanActive) return;
+
+                let severity = "LOW";
+                let score = 10;
+                let desc = "Standard app installed.";
+
+                if (app.permissions > 15) {
+                  severity = "CRITICAL";
+                  score = 85;
+                  desc = "Excessive Permissions (" + app.permissions + "). High privacy risk.";
+                } else if (app.permissions > 8) {
+                  severity = "HIGH";
+                  score = 60;
+                  desc = "Multiple sensitive permissions (" + app.permissions + ") detected.";
+                } else if (app.package.includes("debug") || app.package.includes("test")) {
+                  severity = "MEDIUM";
+                  score = 40;
+                  desc = "Potential debug or test package found.";
+                }
+
+                addThreatToFeed({
+                  app: app.name,
+                  description: desc,
+                  severity: severity,
+                  threat_score: score,
+                  type: "Static Analysis",
+                  permissions: app.sensitivePerms
+                });
+
+                if (severity !== "LOW") {
+                  updateScoresList({ [app.package]: { app: app.name, score: score } });
+                  updateStats({ permissions: app.sensitivePerms });
+                }
+              }, index * 40);
+            });
+          } catch (err) {
+            alert("Scan Logic Error: " + err.message);
+            startBtn.textContent = originalText;
+            startBtn.style.opacity = "1";
+          }
+        }, 500);
+      } catch (e) {
+        alert("Startup Error: " + e.message);
+      }
+    }
+
+    // ── START SCAN (PC) ──
+    async function startScan() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/start-scan`, { method: "POST" });
+        const data = await res.json();
+
+        if (!data.success) {
+          showToast("❌ " + data.error);
+          return;
+        }
+
+        sessionId = data.session_id;
+        scanActive = true;
+        threatCount = 0;
+        startTime = Date.now();
+
+        setStatus(true, `Scanning device — Session: ${sessionId}`);
+        document.getElementById("threat-feed").innerHTML = "";
+
+        // Start timer
+        timerInterval = setInterval(updateTimer, 1000);
+
+        // Listen to Firebase for live events
+        listenToFirebase();
+
+        // Narration interval — every 15 seconds
+        narrationInterval = setInterval(requestNarration, 15000);
+
+        showToast("👻 PhantomDroid scan started!");
+
+      } catch (e) {
+        showToast("❌ Could not connect to backend. Is Flask running?");
+        console.error(e);
+      }
+    }
+
+    // ── STOP SCAN ──
+    async function stopScan() {
+      if (!scanActive) return;
+
+      const mode = document.getElementById("scan-mode").value;
+      if (mode === "pc") {
+        await fetch(`${BACKEND_URL}/api/stop-scan`, { method: "POST" });
+      } else {
+        showLocalSummary();
+      }
+
+      scanActive = false;
+      clearInterval(timerInterval);
+      clearInterval(narrationInterval);
+      setStatus(false, `Scan finished. ${threatCount} events processed.`);
+      showToast("■ Scan Stopped");
+    }
+
+    function showLocalSummary() {
+      const criticals = threatCount; // Simple summary for mobile
+      addAINarration("SCAN COMPLETE: Analyzed device security posture. " + threatCount + " total app observations. Found " + appsFlagged.size + " potentially risky apps.");
+      alert("📊 SCAN REPORT\n\nTotal observations: " + threatCount + "\nRisky Apps: " + appsFlagged.size + "\n\nPlease check the Live Feed for details.");
+    }
+
+    // ── GENERATE REPORT ──
+    async function generateReport() {
+      if (!sessionId) {
+        showToast("❌ No scan session found. Run a scan first.");
+        return;
+      }
+      showToast("🤖 Generating AI forensic report...");
+
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/generate-report`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: sessionId })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast("✅ Report ready! Downloading PDF...");
+          window.open(`${BACKEND_URL}${data.pdf_url}`, "_blank");
+        } else {
+          showToast("❌ Report failed: " + data.error);
+        }
+      } catch (e) {
+        showToast("❌ Report error: " + e.message);
+      }
+    }
+
+    // ── FIREBASE LISTENER ──
+    function listenToFirebase() {
+      if (!sessionId) return;
+
+      // Listen to live threat events
+      db.ref(`events/${sessionId}`).on("child_added", (snap) => {
+        const event = snap.val();
+        if (!event) return;
+        addThreatToFeed(event);
+        pendingEvents.push(event);
+        updateStats(event);
+      });
+
+      // Listen to app scores
+      db.ref(`app_scores/${sessionId}`).on("value", (snap) => {
+        const scores = snap.val();
+        if (scores) updateScoresList(scores);
+      });
+    }
+
+    // ── ADD THREAT TO FEED ──
+    function addThreatToFeed(event) {
+      const feed = document.getElementById("threat-feed");
+
+      // Remove empty state
+      const empty = feed.querySelector(".empty-feed");
+      if (empty) empty.remove();
+
+      const sev = event.severity || "LOW";
+      const severityIcons = { CRITICAL: "🔴", HIGH: "🟠", MEDIUM: "🟡", LOW: "🔵" };
+      const severityClass = { CRITICAL: "sev-crit", HIGH: "sev-high", MEDIUM: "sev-med", LOW: "sev-low" };
+      const scoreClass = { CRITICAL: "score-crit", HIGH: "score-high", MEDIUM: "score-med", LOW: "score-low" };
+
+      const timeStr = new Date().toLocaleTimeString("en-IN", { hour12: false });
+
+      const div = document.createElement("div");
+      div.className = `threat-item ${sev}`;
+      div.innerHTML = `
+    <span class="threat-icon">${severityIcons[sev] || "⚪"}</span>
+    <div class="threat-body">
+      <div class="threat-app">${event.app || "unknown"} <span class="sev ${severityClass[sev]}">${sev}</span></div>
+      <div class="threat-desc">${event.description || "Unknown activity"}</div>
+      <div class="threat-time">${timeStr} — ${event.type || "event"}</div>
+    </div>
+    <div class="threat-score ${scoreClass[sev]}">${event.threat_score || 0}</div>
+  `;
+
+      feed.prepend(div); // Newest at top
+
+      // Update feed count
+      threatCount++;
+      document.getElementById("feed-count").textContent = `${threatCount} EVENTS`;
+    }
+
+    // ── UPDATE APP SCORES ──
+    function updateScoresList(scores) {
+      const list = document.getElementById("scores-list");
+      const sorted = Object.values(scores).sort((a, b) => b.score - a.score);
+
+      list.innerHTML = sorted.slice(0, 12).map(item => {
+        const score = item.score || 0;
+        const color = score >= 70 ? "#ff3c5f" : score >= 40 ? "#ff8c42" : score >= 20 ? "#ffe94d" : "#3a6b5d";
+        return `
+      <div class="score-row">
+        <span class="score-app-name" title="${item.app}">${item.app}</span>
+        <div class="score-bar-wrap">
+          <div class="score-bar" style="width:${score}%;background:${color}"></div>
+        </div>
+        <span class="score-num" style="color:${color}">${score}</span>
+      </div>
+    `;
+      }).join("");
+
+      appsFlagged = new Set(sorted.map(s => s.app));
+      document.getElementById("stat-apps").textContent = appsFlagged.size;
+    }
+
+    // ── UPDATE STATS ──
+    function updateStats(event) {
+      document.getElementById("stat-threats").textContent = threatCount;
+
+      // Update permission map
+      if (event && event.permissions && Array.isArray(event.permissions)) {
+        event.permissions.forEach(p => {
+          permCounts[p] = (permCounts[p] || 0) + 1;
+          const cell = document.getElementById(`perm-${p}`);
+          const cnt = document.getElementById(`perm-count-${p}`);
+          if (cell) {
+            cell.classList.add("active");
+            // Check if already active to apply a "new hit" flash
+            cell.classList.remove("flash-red");
+            void cell.offsetWidth; // trigger reflow
+            cell.classList.add("flash-red");
+          }
+          if (cnt) cnt.textContent = permCounts[p];
+        });
+      }
+    }
+
+    // ── REQUEST AI NARRATION ──
+    async function requestNarration() {
+      if (pendingEvents.length === 0) return;
+      const events = pendingEvents.splice(0, 5); // Take up to 5 events
+
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/narrate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ events })
+        });
+        const data = await res.json();
+        if (data.narration) addAINarration(data.narration);
+      } catch (e) {
+        console.error("Narration error:", e);
+      }
+    }
+
+    // ── ADD AI NARRATION ──
+    function addAINarration(text) {
+      const feed = document.getElementById("ai-feed");
+      const empty = feed.querySelector(".ai-empty");
+      if (empty) empty.remove();
+
+      const timeStr = new Date().toLocaleTimeString("en-IN", { hour12: false });
+
+      const div = document.createElement("div");
+      div.className = "ai-message";
+      div.innerHTML = `
+    <div class="ai-meta">// ANALYST UPDATE — ${timeStr}</div>
+    <div class="ai-text" id="ai-typing-${Date.now()}"></div>
+  `;
+      feed.prepend(div);
+
+      // Typewriter effect
+      const target = div.querySelector(".ai-text");
+      let i = 0;
+      const interval = setInterval(() => {
+        target.textContent = text.slice(0, i++);
+        if (i > text.length) clearInterval(interval);
+      }, 18);
+    }
+
+    // ── TIMER ──
+    function updateTimer() {
+      if (!startTime) return;
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
+      const ss = String(elapsed % 60).padStart(2, "0");
+      document.getElementById("stat-time").textContent = `${mm}:${ss}`;
+    }
+
+    // ── STATUS ──
+    function setStatus(active, text) {
+      const dot = document.getElementById("status-dot");
+      const txt = document.getElementById("status-text");
+      dot.className = "status-dot" + (active ? " active" : "");
+      txt.textContent = text;
+      txt.style.color = active ? "var(--green)" : "var(--dim)";
+    }
+
+    // ── TOAST ──
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.textContent = msg;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 3500);
+    }
+
+    function switchTab(tabId, btn) {
+      // Update buttons
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      // Update panels
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active-tab'));
+
+      if (tabId === 'threats') {
+        document.querySelector('.threat-panel').classList.add('active-tab');
+      } else if (tabId === 'ai') {
+        document.querySelector('.ai-panel').classList.add('active-tab');
+      } else if (tabId === 'scores') {
+        document.querySelector('.scores-panel').classList.add('active-tab');
+      }
+
+      showToast("Switching to: " + tabId.toUpperCase());
+    }
+
+    // ── INIT ──
+    initPermGrid();
+
+    // Ensure first panel is visible on mobile if needed
+    window.onload = () => {
+      if (window.innerWidth <= 900) {
+        document.querySelector('.threat-panel').classList.add('active-tab');
+      }
+    };
+  </script>
+</body>
+
+</html>

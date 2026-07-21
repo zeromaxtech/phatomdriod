@@ -1,0 +1,36 @@
+# PhantomDroid .gitignore
+
+# CRITICAL — never commit these
+.env
+firebase_config.json
+*.key
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+
+# Generated reports
+*.pdf
+/tmp/
+
+# SQLite local databases
+data/*.db
+data/session.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

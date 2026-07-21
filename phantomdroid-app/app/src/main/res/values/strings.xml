@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">PhantomDroid</string>
+    <string name="accessibility_service_description">PhantomDroid uses this service to detect which applications are running on your screen to identify ad-profiling correlations and hidden usage.</string>
+</resources>

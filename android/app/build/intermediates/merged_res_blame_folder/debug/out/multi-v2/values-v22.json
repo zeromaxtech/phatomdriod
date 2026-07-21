@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.phantomdroid.security.app-mergeDebugResources-26:/values-v22/values-v22.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\Nikhil\\.gradle\\caches\\8.14.3\\transforms\\a7f12a3c45aec5635a1b7e9d7045c862\\transformed\\appcompat-1.6.1\\res\\values-v22\\values-v22.xml",
+                    "from": {
+                        "startLines": "2,3,4,9",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "55,130,217,487",
+                        "endLines": "2,3,8,13",
+                        "endColumns": "74,86,12,12",
+                        "endOffsets": "125,212,482,764"
+                    }
+                }
+            ]
+        }
+    ]
+}

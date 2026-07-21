@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:ns1="http://schemas.android.com/tools">
+    <color name="launcher_background">#020c0e</color>
+    <color name="launcher_foreground">#00ff9d</color>
+    <string name="app_name">PhantomDroid</string>
+    <style name="Theme.PhantomDroid" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        
+        <item name="colorPrimary">#020c0e</item>
+        <item name="colorPrimaryVariant">#040f12</item>
+        <item name="colorOnPrimary">#00ff9d</item>
+        
+        <item name="colorSecondary">#00e5ff</item>
+        <item name="colorSecondaryVariant">#00e5ff</item>
+        <item name="colorOnSecondary">#000000</item>
+        
+        <item name="android:statusBarColor" ns1:targetApi="l">?attr/colorPrimaryVariant</item>
+        
+        <item name="android:windowBackground">#020c0e</item>
+    </style>
+</resources>
