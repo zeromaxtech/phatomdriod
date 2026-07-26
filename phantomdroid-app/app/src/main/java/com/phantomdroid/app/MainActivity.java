@@ -4,48 +4,99 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.widget.Button;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.util.List;
+
 public class MainActivity extends AppCompatActivity {
+
+    private DatabaseHelper dbHelper;
+    private android.widget.LinearLayout logsContainer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
-        // Simple UI created in code to avoid needing XML layouts for the prototype
+        dbHelper = new DatabaseHelper(this);
+
         android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
         layout.setOrientation(android.widget.LinearLayout.VERTICAL);
         layout.setPadding(50, 50, 50, 50);
 
         TextView title = new TextView(this);
-        title.setText("PhantomDroid V3 Watchdog");
-        title.setTextSize(24f);
+        title.setText("PhantomDroid 24Hr Dashboard");
+        title.setTextSize(22f);
+        title.setPadding(0, 0, 0, 30);
         layout.addView(title);
 
-        TextView desc = new TextView(this);
-        desc.setText("\nTo monitor for ad-profiling and hidden usage over the next 24 hours, you must grant Accessibility access.\n");
-        layout.addView(desc);
+        // Buttons horizontally
+        android.widget.LinearLayout buttonLayout = new android.widget.LinearLayout(this);
+        buttonLayout.setOrientation(android.widget.LinearLayout.HORIZONTAL);
 
         Button btnAccessibility = new Button(this);
-        btnAccessibility.setText("Enable Accessibility Service");
+        btnAccessibility.setText("Enable Monitor");
         btnAccessibility.setOnClickListener(v -> {
             Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
             startActivity(intent);
-            Toast.makeText(this, "Find PhantomDroid and turn it ON", Toast.LENGTH_LONG).show();
         });
-        layout.addView(btnAccessibility);
+        buttonLayout.addView(btnAccessibility);
 
-        Button btnUsage = new Button(this);
-        btnUsage.setText("Enable Usage Access");
-        btnUsage.setOnClickListener(v -> {
-            Intent intent = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
-            startActivity(intent);
+        Button btnRefresh = new Button(this);
+        btnRefresh.setText("Refresh Logs");
+        btnRefresh.setOnClickListener(v -> loadLogs());
+        buttonLayout.addView(btnRefresh);
+        
+        Button btnClear = new Button(this);
+        btnClear.setText("Clear");
+        btnClear.setOnClickListener(v -> {
+            dbHelper.clearLogs();
+            loadLogs();
         });
-        layout.addView(btnUsage);
+        buttonLayout.addView(btnClear);
+
+        layout.addView(buttonLayout);
+
+        // Logs Area
+        ScrollView scrollView = new ScrollView(this);
+        logsContainer = new android.widget.LinearLayout(this);
+        logsContainer.setOrientation(android.widget.LinearLayout.VERTICAL);
+        scrollView.addView(logsContainer);
+
+        layout.addView(scrollView);
 
         setContentView(layout);
+        
+        // Initial load
+        loadLogs();
+    }
+
+    private void loadLogs() {
+        logsContainer.removeAllViews();
+        List<String> logs = dbHelper.getRecentLogs();
+        
+        if (logs.isEmpty()) {
+            TextView tv = new TextView(this);
+            tv.setText("No logs yet. Enable monitor and use some apps.");
+            tv.setPadding(0, 20, 0, 0);
+            logsContainer.addView(tv);
+            return;
+        }
+
+        for (String log : logs) {
+            TextView tv = new TextView(this);
+            tv.setText(log);
+            tv.setPadding(0, 15, 0, 15);
+            logsContainer.addView(tv);
+            
+            // Divider
+            android.view.View divider = new android.view.View(this);
+            divider.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 2));
+            divider.setBackgroundColor(0xFFCCCCCC);
+            logsContainer.addView(divider);
+        }
     }
 }
