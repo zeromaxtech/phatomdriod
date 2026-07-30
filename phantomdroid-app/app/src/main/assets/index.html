@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhantomDroid Dashboard</title>
+    <!-- Tailwind CSS for sleek styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0b0c10;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .glow-green {
+            text-shadow: 0 0 10px rgba(0, 230, 118, 0.5);
+        }
+        .glow-cyan {
+            text-shadow: 0 0 10px rgba(100, 255, 218, 0.4);
+        }
+        .glass-card {
+            background: rgba(30, 30, 46, 0.65);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body class="text-gray-100 min-h-screen flex flex-col p-4">
+
+    <!-- Title -->
+    <div class="text-center my-4">
+        <h1 class="text-2xl font-bold text-[#00E676] tracking-widest glow-green">PHANTOMDROID</h1>
+        <p class="text-xs text-gray-500 uppercase tracking-widest mt-1">24-Hour Privacy Watchdog</p>
+    </div>
+
+    <!-- Status & Timer Card -->
+    <div class="glass-card rounded-xl p-5 mb-6 text-center shadow-lg">
+        <div id="status-indicator" class="text-sm font-bold text-red-500 tracking-wider mb-2">
+            ● STOPPED
+        </div>
+        <div id="timer-display" class="text-3xl font-bold tracking-tight text-white mb-3">
+            00:00:00 / 24:00:00
+        </div>
+        <div class="flex justify-center space-x-6 text-sm">
+            <span id="event-count" class="text-[#64FFDA] glow-cyan">Events: 0</span>
+            <span id="app-count" class="text-yellow-400">Unique Apps: 0</span>
+        </div>
+    </div>
+
+    <!-- Actions Row -->
+    <div class="grid grid-cols-2 gap-3 mb-4">
+        <button onclick="AndroidBridge.enableMonitor()" class="bg-[#00E676] hover:bg-green-400 text-black font-bold py-3 px-4 rounded-lg text-xs tracking-wider transition-colors shadow">
+            ENABLE MONITOR
+        </button>
+        <button onclick="triggerReport()" class="bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-3 px-4 rounded-lg text-xs tracking-wider transition-colors shadow">
+            GENERATE REPORT
+        </button>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mb-6">
+        <button onclick="refreshDashboard()" class="bg-[#1f2833] border border-[#64FFDA] text-[#64FFDA] font-bold py-3 px-4 rounded-lg text-xs tracking-wider transition-colors">
+            REFRESH
+        </button>
+        <button onclick="clearAllLogs()" class="bg-[#1f2833] border border-red-500 text-red-500 font-bold py-3 px-4 rounded-lg text-xs tracking-wider transition-colors">
+            CLEAR ALL
+        </button>
+    </div>
+
+    <!-- Logs Container -->
+    <div class="flex-grow flex flex-col min-h-0">
+        <h2 class="text-xs font-bold text-[#00E676] mb-2 uppercase tracking-widest">LIVE ACTIVITY LOG</h2>
+        <div class="flex-grow glass-card rounded-xl p-4 overflow-y-auto max-h-[300px] border border-gray-800" id="log-list">
+            <!-- Dynamic logs will go here -->
+            <p class="text-gray-500 text-sm">No activity recorded. Enable Accessibility service to start.</p>
+        </div>
+    </div>
+
+    <script>
+        function refreshDashboard() {
+            try {
+                // Get Stats
+                const statsRaw = AndroidBridge.getStats();
+                const stats = JSON.parse(statsRaw);
+
+                // Update Status
+                const statusIndicator = document.getElementById('status-indicator');
+                if (stats.status === "running") {
+                    statusIndicator.innerText = "● MONITORING ACTIVE";
+                    statusIndicator.className = "text-sm font-bold text-[#00E676] tracking-wider mb-2 glow-green";
+                } else {
+                    statusIndicator.innerText = "● STOPPED";
+                    statusIndicator.className = "text-sm font-bold text-red-500 tracking-wider mb-2";
+                }
+
+                // Update counters
+                document.getElementById('event-count').innerText = `Events: ${stats.events}`;
+                document.getElementById('app-count').innerText = `Unique Apps: ${stats.apps}`;
+
+                // Update Timer
+                if (stats.startTime > 0 && stats.status === "running") {
+                    const elapsed = stats.currentTime - stats.startTime;
+                    document.getElementById('timer-display').innerText = `${formatTime(elapsed)} / 24:00:00`;
+                } else {
+                    document.getElementById('timer-display').innerText = "00:00:00 / 24:00:00";
+                }
+
+                // Get Logs
+                const logsRaw = AndroidBridge.getRecentLogs();
+                const logs = JSON.parse(logsRaw);
+                const logList = document.getElementById('log-list');
+                
+                if (logs.length === 0) {
+                    logList.innerHTML = `<p class="text-gray-500 text-sm">No logs yet. Enable monitor and open some apps.</p>`;
+                    return;
+                }
+
+                logList.innerHTML = logs.map(log => {
+                    let appName = log.app;
+                    if (appName.includes('.')) {
+                        const parts = appName.split('.');
+                        appName = parts[parts.length - 1];
+                    }
+                    return `
+                        <div class="flex items-center justify-between py-2 border-b border-gray-800 text-xs">
+                            <span class="text-gray-500">${log.time}</span>
+                            <span class="text-[#64FFDA] font-bold uppercase tracking-wider grow px-4 text-left">${appName}</span>
+                            <span class="text-gray-400">${log.desc}</span>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (e) {
+                console.error("Dashboard error: ", e);
+            }
+        }
+
+        function formatTime(ms) {
+            if (ms < 0) ms = 0;
+            const totalSec = Math.floor(ms / 1000);
+            const hours = Math.floor(totalSec / 3600);
+            const minutes = Math.floor((totalSec % 3600) / 60);
+            const seconds = totalSec % 60;
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function triggerReport() {
+            try {
+                const message = AndroidBridge.generateReport();
+                alert(message);
+            } catch (e) {
+                alert("Error: " + e.message);
+            }
+        }
+
+        function clearAllLogs() {
+            if (confirm("Are you sure you want to delete all logs?")) {
+                try {
+                    AndroidBridge.clearLogs();
+                    refreshDashboard();
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+        }
+
+        // Initialize and setup auto-updates
+        window.onload = function() {
+            refreshDashboard();
+            setInterval(refreshDashboard, 1000); // Live update every second
+        };
+    </script>
+</body>
+</html>
